@@ -1,0 +1,6 @@
+﻿  Game.cpp
+e:\airpgenv_\airpgenv\game.cpp(12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+e:\airpgenv_\airpgenv\game.cpp(55): warning C4244: 'return': conversion from 'double' to 'int', possible loss of data
+  gui.cpp
+  Generating Code...
+  AiRPGEnv.vcxproj -> E:\AiRPGEnv_\x64\Debug\AiRPGEnv.exe

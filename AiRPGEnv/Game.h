@@ -17,7 +17,7 @@ namespace RPGEnv {
 		GUI *Interface;
 		
 		Game(const char* &img4map, const char* &window_name);
-		int CalcDist(Character & You, Character & Other);
+		double CalcDist(Character & You, Character & Other);
 		void KeyEventHandler();
 		void AddNewMonster(int count, int Level, int HP);
 

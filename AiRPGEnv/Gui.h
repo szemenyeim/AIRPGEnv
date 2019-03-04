@@ -7,10 +7,12 @@ constexpr auto SPACE = 32;
 class GUI 
 {
 public:
+	unsigned int SIZE_X;
+	unsigned int SIZE_Y;
 
-	unsigned char* MapData;
+	
 	void ClearWindow();
-	void ShowWindow();
+	void ShowWindow(int x, int y);
 
 	//Need to send a cropped segment 64x64 to show
 	GUI(const char* &img4map, const char* &window_name);

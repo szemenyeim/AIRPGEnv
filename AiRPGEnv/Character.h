@@ -1,8 +1,8 @@
 #pragma once
 #include <time.h>
 
-const unsigned int MAP_SIZE_X = 64;
-const unsigned int MAP_SIZE_Y = 64;
+static unsigned int MAP_SIZE_X = 64;
+static unsigned int MAP_SIZE_Y = 64;
 
 namespace RPGEnv {
 
@@ -24,7 +24,11 @@ namespace RPGEnv {
 		int current_HP;
 
 		Character(int level = 1, int max_HP = 100, int curr_HP = 100);
-
+		static void setMapSize(unsigned int x, unsigned int y)
+		{
+			MAP_SIZE_X = x;
+			MAP_SIZE_Y = y;
+		}
 		void Die();
 		void Move(int dx, int dy);
 		void Attack(Character& Enemy);
@@ -47,9 +51,13 @@ namespace RPGEnv {
 
 	void Character::Move(int dx, int dy)
 	{
-		this->position.x += dx;
-		this->position.y += dy;
-		
+		int new_x = this->position.x + dx;
+		int new_y = this->position.y + dy;
+		if (0 < new_x && 0 < new_y && new_x < MAP_SIZE_X && new_y < MAP_SIZE_Y)
+		{
+			this->position.x = new_x;
+			this->position.y = new_y;
+		}
 	}
 
 	void Character::Attack(Character &Enemy)

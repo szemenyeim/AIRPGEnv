@@ -22,19 +22,26 @@ void GUI::ClearWindow()
 	current_game = game_map.clone();
 }
 
-void GUI::ShowWindow()
-{
+void GUI::ShowWindow(int x, int y)
+{	
+	
+		x = x - 32 > 0 ? x - 32 : 0;
+		y = y - 32 > 0 ? y - 32 : 0;
+		x = x + 64 < current_game.cols ? x : current_game.cols - 64;
+		y = y + 64 < current_game.rows ? y : current_game.rows - 64;
+		current_game = current_game(Rect(x, y, 64, 64));
 	imshow(window_name, current_game);
+	
 	waitKey(1);
 }
 
 GUI::GUI(const char* &img4map, const char* &window_name) :img4map(img4map), window_name(window_name)
 {
 	ClearWindow();
-
 	namedWindow(window_name, WINDOW_NORMAL);
-	
-	ShowWindow();
+	SIZE_X = current_game.cols;
+	SIZE_Y = current_game.rows;
+		
 }
 
 void GUI::DrawHero(int x, int y)
@@ -61,5 +68,5 @@ void GUI::DrawMonster(int x, int y)
 
 int GUI::GetKeyPressed()
 {
-	return waitKeyEx(50);
+	return waitKeyEx();
 }

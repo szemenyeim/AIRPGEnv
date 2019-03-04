@@ -3,7 +3,7 @@
 
 using namespace RPGEnv;
 
-const char* img4map = "map.jpg";
+const char* img4map = "map2.jpg";
 const char* window_name = "AiPG";
 const int DeltaPos = 1;
 
@@ -11,7 +11,7 @@ Game::Game(const char* &img4map, const char* &window_name)
 {
 	srand(time(NULL));
 	Interface = new GUI(img4map, window_name);
-	GameData = Interface->MapData;
+	Character::setMapSize(Interface->SIZE_X, Interface->SIZE_Y);
 	PlayerOne = Hero();
 	Characters.push_back(&PlayerOne);
 	Invalidate();
@@ -25,17 +25,17 @@ void Game::Invalidate()
 	{
 		(*it)->Draw(*Interface);
 	}
-	Interface->ShowWindow();
+	Interface->ShowWindow(PlayerOne.position.x, PlayerOne.position.y );
 }
 
 Character * RPGEnv::Game::FindNearest(Character & You)
 {
 	Character* nearest = nullptr;
-	int min_dist=3;
+	int min_dist=5;
 	for (auto it = Characters.begin(); it != Characters.end(); it++)
 	{
-		int act_dist = 0;
-		if ((*it)->position.x != You.position.x && (*it)->position.y != You.position.y)
+		double act_dist = 0;
+		if ((*it)->position.x != You.position.x || (*it)->position.y != You.position.y)
 		{
 			act_dist = CalcDist(You, **it);
 			if (act_dist < min_dist)
@@ -48,7 +48,7 @@ Character * RPGEnv::Game::FindNearest(Character & You)
 	return nearest;
 }
 
-int Game::CalcDist(Character & You, Character & Other)
+double Game::CalcDist(Character & You, Character & Other)
 {
 	int x_dist = You.position.x - Other.position.x;
 	int y_dist = You.position.y - Other.position.y;
@@ -113,7 +113,7 @@ int main()
 {
 	// initializing the game
 	Game *game = new Game(img4map, window_name);
-	game->AddNewMonster(5);
+	game->AddNewMonster(50);
 	while (true)
 	{
 		game->KeyEventHandler();

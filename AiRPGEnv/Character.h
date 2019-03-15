@@ -1,5 +1,6 @@
 #pragma once
 #include <time.h>
+#include "Gui.h"
 
 static unsigned int MAP_SIZE_X = 64;
 static unsigned int MAP_SIZE_Y = 64;
@@ -30,7 +31,7 @@ namespace RPGEnv {
 			MAP_SIZE_Y = y;
 		}
 		void Die();
-		void Move(int dx, int dy);
+		void Move(int dx, int dy, GUI& gui);
 		void Attack(Character& Enemy);
 		void Defense();
 		virtual void Draw(GUI& gui)=0;
@@ -49,11 +50,15 @@ namespace RPGEnv {
 		delete this;
 	}
 
-	void Character::Move(int dx, int dy)
+	void Character::Move(int dx, int dy, GUI &gui)
 	{
+		
 		int new_x = this->position.x + dx;
 		int new_y = this->position.y + dy;
-		if (0 < new_x && 0 < new_y && new_x < MAP_SIZE_X && new_y < MAP_SIZE_Y)
+
+		int blue = gui.isBlue(new_x, new_y);
+
+		if (0 < new_x && 0 < new_y && new_x < MAP_SIZE_X && new_y < MAP_SIZE_Y && blue == 0)
 		{
 			this->position.x = new_x;
 			this->position.y = new_y;

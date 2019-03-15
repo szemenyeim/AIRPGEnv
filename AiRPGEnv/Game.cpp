@@ -57,6 +57,7 @@ double Game::CalcDist(Character & You, Character & Other)
 
 void Game::KeyEventHandler() 
 {
+	
 	int keypressed = GUI::GetKeyPressed();
 	switch (keypressed)
 	{
@@ -76,22 +77,22 @@ void Game::KeyEventHandler()
 		break;
 	}
 	case (int)'w':
-	{	PlayerOne.Move(0, -DeltaPos);
+	{	PlayerOne.Move(0, -DeltaPos, *Interface);
 	break;
 	}
 	case (int)'a':
 	{
-		PlayerOne.Move(-DeltaPos, 0);
+		PlayerOne.Move(-DeltaPos, 0, *Interface);
 		break;
 	}
 	case (int)'s':
 	{
-		PlayerOne.Move(0, DeltaPos);
+		PlayerOne.Move(0, DeltaPos, *Interface);
 		break;
 	}
 	case (int)'d':
 	{
-		PlayerOne.Move(DeltaPos, 0);
+		PlayerOne.Move(DeltaPos, 0 , *Interface);
 		break;
 	}
 	}

@@ -1,2 +1,6 @@
-﻿  gui.cpp
+﻿  Game.cpp
+e:\airpgenv\airpgenv\character.h(61): warning C4018: '<': signed/unsigned mismatch
+e:\airpgenv\airpgenv\game.cpp(12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  gui.cpp
+  Generating Code...
   AiRPGEnv.vcxproj -> E:\AIRPGEnv\x64\Debug\AiRPGEnv.exe

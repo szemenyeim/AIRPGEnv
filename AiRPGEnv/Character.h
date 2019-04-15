@@ -11,7 +11,7 @@ namespace RPGEnv {
 	public:
 		int x;
 		int y;
-		
+
 		Position(int x = 0, int y = 0) :x(x), y(y) {};
 	};
 
@@ -19,40 +19,44 @@ namespace RPGEnv {
 	{
 	public:
 		Position position;
-
 		int Level;
 		int maximum_HP;
 		int current_HP;
+		int experience;
+		int ThreadID;
 
-		Character(int level = 1, int max_HP = 100, int curr_HP = 100);
+		Character(int level = 1, int max_HP = 100, int curr_HP = 100, int experience = 0);
+
 		static void setMapSize(unsigned int x, unsigned int y)
 		{
 			MAP_SIZE_X = x;
 			MAP_SIZE_Y = y;
 		}
 		void Die();
+		void gainXP(int xp);
 		void Move(int dx, int dy, GUI& gui);
 		void Attack(Character& Enemy);
 		void Defense();
-		virtual void Draw(GUI& gui)=0;
+		virtual void Draw(GUI& gui) = 0;
+
 	};
 
-	Character::Character(int level, int max_HP, int curr_HP):
-	Level(level),maximum_HP(max_HP),current_HP(curr_HP)
+	Character::Character(int level, int max_HP, int curr_HP, int experience) :
+		Level(level), maximum_HP(max_HP), current_HP(curr_HP), experience(experience)
 	{
 		int x_pos = rand() % MAP_SIZE_X;
 		int y_pos = rand() % MAP_SIZE_Y;
 		position = Position(x_pos, y_pos);
 	}
-
 	inline void Character::Die()
 	{
+
 		delete this;
 	}
 
 	void Character::Move(int dx, int dy, GUI &gui)
 	{
-		
+
 		int new_x = this->position.x + dx;
 		int new_y = this->position.y + dy;
 
@@ -67,9 +71,19 @@ namespace RPGEnv {
 
 	void Character::Attack(Character &Enemy)
 	{
-		
+
 		{
-			Enemy.current_HP -= 100;//Level * 5;
+			Enemy.current_HP -= 30;//Level * 5;
+			std::cout << "Enemy HP: " << Enemy.current_HP << std::endl;
 		}
+	}
+	void Character::gainXP(int xp) {
+
+		this->experience += xp;
+		this->Level = static_cast<int>(this->experience / (50 + 50 * this->Level));
+
+		std::cout << "Hero LVL: " << this->Level << std::endl;
+		std::cout << "Hero XP: " << this->experience << std::endl;
+
 	}
 }

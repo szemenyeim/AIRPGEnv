@@ -1,6 +1,7 @@
 #pragma once
 #include "Character.h"
 #include "Gui.h"
+#include <queue>
 
 namespace RPGEnv {
 

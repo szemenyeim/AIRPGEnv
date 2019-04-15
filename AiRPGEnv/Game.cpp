@@ -1,5 +1,7 @@
 #include <iostream>
 #include "Game.h"
+#include "concurrent_queue.h"
+#include <thread>
 
 using namespace RPGEnv;
 
@@ -14,8 +16,8 @@ Game::Game(const char* &img4map, const char* &window_name)
 	Character::setMapSize(Interface->SIZE_X, Interface->SIZE_Y);
 	PlayerOne = Hero();
 	Characters.push_back(&PlayerOne);
+	Heroes.push(&PlayerOne);
 	Invalidate();
-
 }
 
 void Game::Invalidate()
@@ -25,13 +27,13 @@ void Game::Invalidate()
 	{
 		(*it)->Draw(*Interface);
 	}
-	Interface->ShowWindow(PlayerOne.position.x, PlayerOne.position.y );
+	Interface->ShowWindow(PlayerOne.position.x, PlayerOne.position.y);
 }
 
 Character * RPGEnv::Game::FindNearest(Character & You)
 {
 	Character* nearest = nullptr;
-	int min_dist=5;
+	int min_dist = 5;
 	for (auto it = Characters.begin(); it != Characters.end(); it++)
 	{
 		double act_dist = 0;
@@ -55,9 +57,8 @@ double Game::CalcDist(Character & You, Character & Other)
 	return sqrt((x_dist * x_dist) + (y_dist*y_dist));
 }
 
-void Game::KeyEventHandler() 
+void Game::KeyEventHandler()
 {
-	
 	int keypressed = GUI::GetKeyPressed();
 	switch (keypressed)
 	{
@@ -70,8 +71,8 @@ void Game::KeyEventHandler()
 			if (0 >= Enemy->current_HP)
 			{
 				Characters.remove(Enemy);
-				//Enemy->Die();
-
+				Enemy->Die();
+				PlayerOne.gainXP((20 * Enemy->Level) - (PlayerOne.Level - Enemy->Level) * 5);
 			}
 		}
 		break;
@@ -92,34 +93,38 @@ void Game::KeyEventHandler()
 	}
 	case (int)'d':
 	{
-		PlayerOne.Move(DeltaPos, 0 , *Interface);
+		PlayerOne.Move(DeltaPos, 0, *Interface);
 		break;
 	}
 	}
 	Invalidate();
 }
 
-void Game::AddNewMonster(int count = 1, int Level = 1, int HP = 100)
+void Game::AddNewMonster(int count = 50, int Level = 1, int HP = 100)
 {
 	for (int i = 0; i < count; i++)
 	{
-		Monster *boo = new Monster(Level, HP, HP);
+		Monster *boo = new Monster(Heroes, Level, HP, HP);
 		Villians.push_back(boo);
 		Characters.push_back(boo);
 		Invalidate();
+		MonsterEngageThreads[i] = std::thread(&Monster::Engage, boo, Heroes);
 	}
 }
 
 int main()
 {
+	std::queue<Hero> heroes;
 	// initializing the game
 	Game *game = new Game(img4map, window_name);
 	game->AddNewMonster(50);
+
 	while (true)
 	{
 		game->KeyEventHandler();
 	}
-	
+
+
 	return 0;
 
 }

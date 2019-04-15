@@ -4,7 +4,7 @@
 
 constexpr auto SPACE = 32;
 
-class GUI 
+class GUI
 {
 public:
 	unsigned int SIZE_X;
@@ -12,7 +12,7 @@ public:
 
 	unsigned int x_pos_onScreen;
 	unsigned int y_pos_onScreen;
-	
+
 	void ClearWindow();
 	void ShowWindow(int x, int y);
 
@@ -29,4 +29,3 @@ private:
 	const char* &img4map;
 	cv::Mat current_game;
 };
-

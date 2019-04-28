@@ -6,6 +6,7 @@
 #include <thread>
 #include <chrono>
 #include <mutex>
+#include <map>
 #include "character.h"
 #include "Non-playable-character.h"
 #include "hero.h"
@@ -16,7 +17,7 @@
 const char* img4map = "map2.jpg";
 const char* window_name = "AiPG";
 
-std::list<RPGEnv::Character*> Characters;
+std::map<int,RPGEnv::Character*> Characters;
 
 int my_xpos, my_ypos;
 using namespace std;
@@ -27,7 +28,7 @@ int KEY_PRESSED;
 std::mutex key_lock;
 
 
-void DrawAll(std::string message)
+void DrawAll(std::string message, std::string PlayerName)
 {
 	string token, monster;
 	string delimiter = ";";
@@ -39,9 +40,9 @@ void DrawAll(std::string message)
 			characters_from_msg.push_back(token);
 			message.erase(0, pos + 2);
 	}
-	for (auto it = characters_from_msg.begin(); it != characters_from_msg.end(); it++)
+	for (auto msg_it = characters_from_msg.begin(); msg_it != characters_from_msg.end(); msg_it++)
 	{
-		monster = (*it);
+		monster = (*msg_it);
 		while ((pos = monster.find(delimiter)) != string::npos)
 		{
 			
@@ -50,24 +51,49 @@ void DrawAll(std::string message)
 			monster.erase(0, pos + delimiter.length());
 		}
 		params.push_back(monster);
-		if (!params.empty())
+
+		int id = stoi(params[0]);
+		std::string name = params[1];
+		int x_pos = stoi(params[2]);
+		int y_pos = stoi(params[3]);
+		int level = stoi(params[4]);
+		int currentHP = stoi(params[5]);
+		int maximumHP = stoi(params[6]);
+
+		auto char_it = Characters.find(id);
+
+
+		if (!params.empty() && char_it == Characters.end())
 		{
 			if (params[1] == "Monster")
 			{
 				RPGEnv::Monster * New =
-					new RPGEnv::Monster(
-						stoi(params[2]), stoi(params[3]),
-						stoi(params[4]), stoi(params[5]), stoi(params[6])
-					);
-				Characters.push_back(New);
+					new RPGEnv::Monster(x_pos, y_pos, level, maximumHP, currentHP);
+				Characters.try_emplace(id, New);
 			}
 			else
 			{
-				RPGEnv::Hero *New = new RPGEnv::Hero(
-					params[1], stoi(params[2]), stoi(params[3]),
-					stoi(params[4]), stoi(params[5]), stoi(params[6]));
+				RPGEnv::Hero *New =
+					new RPGEnv::Hero(name, x_pos, y_pos, level, maximumHP, currentHP);
+
+				Characters.emplace(id, New);
+
+				if (New->name == PlayerName)
+				{
+					my_xpos = x_pos;
+					my_ypos = y_pos;
+
+				}
 			}
 			params.clear();
+		}
+	
+		else if (char_it != Characters.end())
+		{
+			Characters[id]->position.x = x_pos;
+			Characters[id]->position.y = y_pos;
+			Characters[id]->current_HP = currentHP;
+			Characters[id]->maximum_HP = maximumHP;
 		}
 	}
 	characters_from_msg.clear();
@@ -80,7 +106,7 @@ void Invalidate(GUI *Interface)
 	Interface->ClearWindow();
 	for (auto it = Characters.begin(); it != Characters.end(); it++)
 	{
-		(*it)->Draw(*Interface);
+		(*it).second->Draw(*Interface);
 	}
 	Characters.clear();
 	Interface->ShowWindow(my_xpos, my_ypos);
@@ -144,7 +170,7 @@ void client(string ipAddress, int port, string PlayerName)
 			message = string(buf, 0, bytesReceived);
 			//Echo response to console
 			cout << "SERVER > " << message << endl;
-			DrawAll(message);
+			DrawAll(message, PlayerName);
 
 		}
 

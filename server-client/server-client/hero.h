@@ -19,7 +19,7 @@ namespace RPGEnv {
 		std::string Parse()
 		{
 			std::string msg;
-			msg = id + ";" + name + ";" + std::to_string(position.x) + ";"
+			msg = std::to_string(id) + ";" + name + ";" + std::to_string(position.x) + ";"
 				+ std::to_string(position.y) + ";"
 				+ std::to_string(Level) + ";"
 				+ std::to_string(current_HP) + ";"

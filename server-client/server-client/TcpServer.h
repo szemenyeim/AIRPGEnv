@@ -40,16 +40,6 @@ namespace RPGEnv {
 	};
 
 
-
-
-
-
-
-
-
-
-
-
 	class TcpServer
 	{
 

@@ -52,13 +52,27 @@ void DrawAll(std::string message, std::string PlayerName)
 		}
 		params.push_back(monster);
 
-		int id = stoi(params[0]);
+		int id, x_pos, y_pos, level, currentHP, maximumHP;
+		
+		if (params.size() != 7)
+			continue;
+
+		try
+		{
+			id = stoi(params[0]);
+			x_pos = stoi(params[2]);
+			y_pos = stoi(params[3]);
+			level = stoi(params[4]);
+			currentHP = stoi(params[5]);
+			maximumHP = stoi(params[6]);
+		}
+		catch (const std::exception&)
+		{
+			continue;
+		}
+		
 		std::string name = params[1];
-		int x_pos = stoi(params[2]);
-		int y_pos = stoi(params[3]);
-		int level = stoi(params[4]);
-		int currentHP = stoi(params[5]);
-		int maximumHP = stoi(params[6]);
+		
 
 		auto char_it = Characters.find(id);
 
@@ -108,7 +122,6 @@ void Invalidate(GUI *Interface)
 	{
 		(*it).second->Draw(*Interface);
 	}
-	Characters.clear();
 	Interface->ShowWindow(my_xpos, my_ypos);
 }
 
@@ -170,8 +183,9 @@ void client(string ipAddress, int port, string PlayerName)
 			message = string(buf, 0, bytesReceived);
 			//Echo response to console
 			cout << "SERVER > " << message << endl;
+			key_lock.lock();
 			DrawAll(message, PlayerName);
-
+			key_lock.unlock();
 		}
 
 		//TODOD::MUTEX
@@ -210,10 +224,11 @@ int main()
 	{
 		key_lock.lock();
 		KEY_PRESSED = GUI::GetKeyPressed();
+		Invalidate(Interface);
 		key_lock.unlock();
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
-		Invalidate(Interface);
+		
 	}
 	
 }

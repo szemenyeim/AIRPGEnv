@@ -1,3 +1,0 @@
-﻿  gui.cpp
-gui.obj : error LNK2001: unresolved external symbol "void __cdecl cv::imshow(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &,class cv::_InputArray const &)" (?imshow@cv@@YAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV_InputArray@1@@Z)
-E:\AiRPGEnv_\x64\Release\AiRPGEnv.exe : fatal error LNK1120: 1 unresolved externals

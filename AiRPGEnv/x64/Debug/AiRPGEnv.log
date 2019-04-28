@@ -1,4 +1,0 @@
-﻿  Game.cpp
-c:\users\picsafüst\source\repos\szemenyeim\airpgenv\airpgenv\character.h(65): warning C4018: '<': signed/unsigned mismatch
-c:\users\picsafüst\source\repos\szemenyeim\airpgenv\airpgenv\game.cpp(14): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
-  AiRPGEnv.vcxproj -> C:\Users\picsafüst\source\repos\szemenyeim\AIRPGEnv\x64\Debug\AiRPGEnv.exe

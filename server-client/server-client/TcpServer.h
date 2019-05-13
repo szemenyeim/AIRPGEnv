@@ -18,7 +18,7 @@ namespace RPGEnv {
 	public:
 
 		bool in;
-		//std::mutex lock;
+		bool sent;
 
 
 		std::string readName()
@@ -30,9 +30,16 @@ namespace RPGEnv {
 		{
 			return this->msg;
 		}
-		
-		MsgHandler(std::string name, bool in ,std::string msg = "")
+
+		void changeMsg(std::string msg) 
 		{
+			this->sent = false;
+			this->msg = msg;
+		}
+		
+		MsgHandler(std::string name="", bool in = false ,std::string msg = "")
+		{
+			this->sent = false;
 			this->in = in;
 			this->name = name;
 			this->msg = msg;

@@ -21,6 +21,7 @@ Character::Character(int level, int max_HP, int curr_HP) :
 
 inline void Character::Die()
 {
+	
 	delete this;
 }
 

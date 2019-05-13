@@ -3,10 +3,11 @@
 #include <string>
 #include <sstream>
 #include <vector>
-
+#include <map>
 using namespace RPGEnv;
 
-extern std::list<MsgHandler> Mailbox;
+extern std::map<int, MsgHandler> Mailbox_out;
+extern std::list<MsgHandler> Mailbox_in;
 extern std::mutex lock;
 
 int TcpServer::init()
@@ -29,6 +30,9 @@ int TcpServer::init()
 	{
 		return WSAGetLastError();
 	}
+
+	//DWORD timeout = 0.001 * 1000;			//1ms timeout
+	//setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
 
 	// Bind the ip address and port to a socket
 	sockaddr_in hint;
@@ -117,6 +121,9 @@ int TcpServer::run()
 				{
 					onMessageReceived(sock, buf, bytesIn);
 				}
+
+				//Broadcasting systemstate
+				broadcastToClients(sock);
 			}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -152,36 +159,38 @@ void TcpServer::broadcastToClients(int sendingClient)
 {
 	//TODO: Ez valami huncutságot mûvel 
 	std::string message;
+	
 	for (int i = 0; i < m_master.fd_count; i++)
 	{
 		SOCKET outSock = m_master.fd_array[i];
 		if (outSock != m_socket)
 		{
+			
 			lock.lock();
 			// send the message to the client
-			for (auto msg = Mailbox.begin(); msg != Mailbox.end(); msg++)
+			for (auto msg = Mailbox_out.begin(); msg != Mailbox_out.end(); msg++)
 			{
-				if (msg->in == false) 
+				if (msg->second.in == false && msg->second.sent==false) 
 				{
 					
-					message = msg->readMsg();
-					//message += ";" + msg->readMsg();
+					message = msg->second.readMsg();
 					const char *c = message.c_str();
 					sendToClient(outSock, c, message.length());
+					msg->second.sent = true;
 					
 				}
-				std::list<MsgHandler>::iterator it;
-				if (msg != Mailbox.begin())
+				std::map<int,MsgHandler>::iterator it;
+				if (msg != Mailbox_out.begin())
 				{
 					it = msg;
 					it--;
 				}
 				
-				Mailbox.erase(msg);
-				it = Mailbox.begin();
-				msg = it;
-				if (Mailbox.empty())
-					break;
+				//Mailbox_out.erase(msg);
+				//it = Mailbox_out.begin();
+				//msg = it;
+				//if (Mailbox_out.empty())
+				//	break;
 				
 			}
 			lock.unlock();
@@ -203,7 +212,7 @@ void TcpServer::onClientConnected(int clientSocket)
 	if (bytesIn > 0)
 	{
 		//Message is the name you should leave a message to create a new hero with
-		Mailbox.push_back(MsgHandler(buf,true));
+		Mailbox_in.push_back(MsgHandler(buf,true));
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
@@ -223,12 +232,13 @@ void TcpServer::onMessageReceived(int clientSocket, const char* msg, int length)
 	{
 		splitted.push_back(token);
 	}
+	if(splitted.size() > 1)
 	if ("0" != splitted[1])
 	{
-		Mailbox.push_back(MsgHandler(splitted[0], true, splitted[1]));
+		Mailbox_in.push_back(MsgHandler(splitted[0], true, splitted[1]));
 	}
 	
 	
-	broadcastToClients(clientSocket);
+	/*broadcastToClients(clientSocket);*/
 	std::cout << msg << std::endl;
 }

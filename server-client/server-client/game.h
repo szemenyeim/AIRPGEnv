@@ -22,14 +22,14 @@ namespace RPGEnv {
 		std::vector<Monster*> Villians;
 		
 		Environment *Interface;
-		std::map<std::string, Hero> Players;
+		std::map<std::string, int> Players;
 		
 
 		Game(const char* &img4map);
 		double CalcDist(Character & You, Character & Other);
-		void KeyEventHandler(int keypressed, Hero &PlayerOne);
+		void KeyEventHandler(int keypressed, Hero *PlayerOne);
 		void AddNewMonster(int count, int Level, int HP);	
-		void Invalidate(std::list<MsgHandler> &Mailbox);
+		void Invalidate(std::map<int,MsgHandler> &Mailbox);
 
 	private:
 		

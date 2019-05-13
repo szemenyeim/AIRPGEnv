@@ -70,7 +70,7 @@ void GUI::DrawMonster(int x, int y)
 
 int GUI::GetKeyPressed()
 {
-	return waitKeyEx(1);
+	return waitKeyEx(10);
 }
 
 int GUI::isBlue(int x, int y)

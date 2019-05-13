@@ -10,7 +10,8 @@ const int DeltaPos = 1;
 
 constexpr auto SPACE = 32;
 
-std::list<MsgHandler> Mailbox;
+std::map<int,MsgHandler> Mailbox_out;
+std::list<MsgHandler> Mailbox_in;
 std::mutex lock;
 
 Game::Game(const char* &img4map)
@@ -21,16 +22,27 @@ Game::Game(const char* &img4map)
 	
 }
 
-void Game::Invalidate(std::list<MsgHandler> &Mailbox)
+void Game::Invalidate(std::map<int,MsgHandler> &Mailbox_out)
 {
 	std::string message, name;
 	std::string delimiter = ";";
-
+	int current_id;
 	for (auto it = Characters.begin(); it != Characters.end(); it++)
 	{
-
 		message = (*it)->Parse();
-		Mailbox.push_back(MsgHandler(name, false, message));
+		current_id = (*it)->id;
+	
+		auto message_it = Mailbox_out.find(current_id);
+
+		if (message_it == Mailbox_out.end())
+		{
+			Mailbox_out.try_emplace(current_id,MsgHandler(name, false, message));
+		}
+		
+		else if (message_it != Mailbox_out.end() && message_it->second.readMsg() != message)
+		{
+			Mailbox_out[current_id].changeMsg(message);
+		}
 
 	}
 	
@@ -64,7 +76,7 @@ double Game::CalcDist(Character & You, Character & Other)
 	return sqrt((x_dist * x_dist) + (y_dist*y_dist));
 }
 
-void Game::KeyEventHandler(int keypressed, Hero &PlayerOne)
+void Game::KeyEventHandler(int keypressed, Hero *PlayerOne)
 {
 
 	
@@ -72,36 +84,36 @@ void Game::KeyEventHandler(int keypressed, Hero &PlayerOne)
 	{
 	case SPACE:				//space
 	{
-		Character *Enemy = FindNearest(PlayerOne);
+		Character *Enemy = FindNearest(*PlayerOne);
 		if (Enemy != NULL)
 		{
-			PlayerOne.Attack(*Enemy);
+			PlayerOne->Attack(*Enemy);
 			if (0 >= Enemy->current_HP)
 			{
 				Characters.remove(Enemy);
-				//Enemy->Die();
+				Mailbox_out[Enemy->id].changeMsg(std::to_string(Enemy->id) +";DEAD\n");
 
 			}
 		}
 		break;
 	}
 	case (int)'w':
-	{	PlayerOne.Move(0, -DeltaPos);
+	{	PlayerOne->Move(0, -DeltaPos);
 	break;
 	}
 	case (int)'a':
 	{
-		PlayerOne.Move(-DeltaPos, 0);
+		PlayerOne->Move(-DeltaPos, 0);
 		break;
 	}
 	case (int)'s':
 	{
-		PlayerOne.Move(0, DeltaPos);
+		PlayerOne->Move(0, DeltaPos);
 		break;
 	}
 	case (int)'d':
 	{
-		PlayerOne.Move(DeltaPos, 0);
+		PlayerOne->Move(DeltaPos, 0);
 		break;
 	}
 	}
@@ -146,18 +158,19 @@ int main()
 	while (true)
 	{
 		lock.lock();
-		if (Mailbox.size() != 0)
+		if (Mailbox_in.size() != 0)
 		{
-			for (auto msg = Mailbox.begin(); msg != Mailbox.end(); msg++)
+			for (auto msg = Mailbox_in.begin(); msg != Mailbox_in.end(); msg++)
 			{
 				if (msg->in == true) 
 				{
 					if (msg->readMsg().empty())
 					{
 						// Create a new hero
+
 						std::string hero_name = msg->readName();
 						Hero *New_Player = new Hero(hero_name);
-						game->Players.try_emplace(hero_name, *New_Player);
+						game->Players.try_emplace(hero_name, New_Player->id);
 						game->Characters.push_back(New_Player);
 
 					}
@@ -165,24 +178,31 @@ int main()
 					{
 						//refresh Players state
 						int KeyPressed = std::stoi(msg->readMsg());
-						game->KeyEventHandler(KeyPressed, game->Players[msg->readName()]);
+						 int id = game->Players[msg->readName()];
+						//game->KeyEventHandler(KeyPressed, (Hero*)(game->Characters[id]));
 
+						for (auto it = game->Characters.begin(); it != game->Characters.end(); it++)
+						{
+							if (id == (*it)->id)
+							{
+								game->KeyEventHandler(KeyPressed, (Hero*)(*it));
+							}
+						}
 					}
 
-					auto it = msg;
-					it--;
-					Mailbox.erase(msg);
-					msg = it;
-					if (Mailbox.empty())
+					
+					Mailbox_in.erase(msg);
+					msg = Mailbox_in.begin();
+					if (Mailbox_in.empty())
 					{
 						break;
 					}
 				}
 			}
 		}
-		game->Invalidate(Mailbox);
+		game->Invalidate(Mailbox_out);
 		lock.unlock();
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
 }

@@ -5,6 +5,7 @@
 #include "Environment.h"
 #include "TcpServer.h"
 
+#include <concurrent_queue.h>
 #include <vector>
 #include <list>
 #include <map>
@@ -20,10 +21,10 @@ namespace RPGEnv {
 		unsigned char* GameData;
 		std::list<Character*> Characters;
 		std::vector<Monster*> Villians;
-		
+		Concurrency::concurrent_queue<Character*> Heroes;
 		Environment *Interface;
 		std::map<std::string, int> Players;
-		
+		std::thread MonsterEngageThreads[51];
 
 		Game(const char* &img4map);
 		double CalcDist(Character & You, Character & Other);

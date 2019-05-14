@@ -5,10 +5,9 @@ using namespace RPGEnv;
 static unsigned int MAP_SIZE_X = 64;
 static unsigned int MAP_SIZE_Y = 64;
 
-Character::Character(int x_pos, int y_pos, int level, int max_HP, int curr_HP) :
+Character::Character(int x_pos, int y_pos, int level, int max_HP, int curr_HP, int experience) :
 	Level(level), maximum_HP(max_HP), current_HP(curr_HP)
 {
-	
 	position = Position(x_pos, y_pos);
 }
 

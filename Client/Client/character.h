@@ -22,7 +22,7 @@ namespace RPGEnv {
 		int maximum_HP;
 		int current_HP;
 
-		Character(int x_pos, int y_pos, int level = 1, int max_HP = 100, int curr_HP = 100);
+		Character(int x_pos, int y_pos, int level = 1, int max_HP = 100, int curr_HP = 100,int experience = 0);
 		static void setMapSize(unsigned int x, unsigned int y);
 
 		bool operator==(const Character & other);

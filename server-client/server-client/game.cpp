@@ -8,7 +8,7 @@ using namespace RPGEnv;
 
 const int DeltaPos = 1;
 
-constexpr auto SPACE = 32;
+const int SPACE = 32;
 
 std::map<int,MsgHandler> Mailbox_out;
 std::list<MsgHandler> Mailbox_in;
@@ -90,43 +90,48 @@ void Game::KeyEventHandler(int keypressed, Hero *PlayerOne)
 			PlayerOne->Attack(*Enemy);
 			if (0 >= Enemy->current_HP)
 			{
+				PlayerOne->gainXP((20 * Enemy->Level) - (PlayerOne->Level - Enemy->Level) * 5);
 				Characters.remove(Enemy);
 				Mailbox_out[Enemy->id].changeMsg(std::to_string(Enemy->id) +";DEAD\n");
-
+				Enemy->Die();
 			}
 		}
 		break;
 	}
 	case (int)'w':
-	{	PlayerOne->Move(0, -DeltaPos);
+	{	
+		PlayerOne->Move(0, -DeltaPos, *Interface);
 	break;
 	}
 	case (int)'a':
 	{
-		PlayerOne->Move(-DeltaPos, 0);
+		PlayerOne->Move(-DeltaPos, 0, *Interface);
 		break;
 	}
 	case (int)'s':
 	{
-		PlayerOne->Move(0, DeltaPos);
+		PlayerOne->Move(0, DeltaPos, *Interface);
 		break;
 	}
 	case (int)'d':
 	{
-		PlayerOne->Move(DeltaPos, 0);
+		PlayerOne->Move(DeltaPos, 0, *Interface);
 		break;
 	}
 	}
 	//Invalidate();
+	PlayerOne->Exploring(keypressed);
+	std::cout << "XP: " << PlayerOne->experience << std::endl;
 }
 
-void Game::AddNewMonster(int count = 1, int Level = 1, int HP = 100)
+void Game::AddNewMonster(int count = 50, int Level = 1, int HP = 100)
 {
 	for (int i = 0; i < count; i++)
 	{
-		Monster *boo = new Monster(Level, HP, HP);
+		Monster *boo = new Monster(Heroes, Level, HP, HP);
 		Villians.push_back(boo);
 		Characters.push_back(boo);
+		MonsterEngageThreads[i] = std::thread(&Monster::Engage, boo, std::ref(Heroes));
 	}
 }
 
@@ -147,7 +152,7 @@ int main()
 	const char* ipAdrress = "127.0.0.1";
 	const char* img4map = "map2.jpg";
 	int port = 54000;
-
+	std::queue<Hero> heroes;
 	//Mailbox.emplace_back("x");
 	Game *game = new Game(img4map);
 	game->AddNewMonster(50);
@@ -170,8 +175,10 @@ int main()
 
 						std::string hero_name = msg->readName();
 						Hero *New_Player = new Hero(hero_name);
+						New_Player->setExplorationMatrix(game->Interface->SIZE_X, game->Interface->SIZE_Y);
 						game->Players.try_emplace(hero_name, New_Player->id);
 						game->Characters.push_back(New_Player);
+						game->Heroes.push(New_Player);
 
 					}
 					else

@@ -30,8 +30,8 @@ namespace RPGEnv {
 				}
 			}
 
-			for (int row = position.y - 32; row < position.y + 32; row++) {
-				for (int col = position.x - 32; col < position.x + 32; col++) {
+			for (uint row = position.y - 32; row < position.y + 32; row++) {
+				for (uint col = position.x - 32; col < position.x + 32; col++) {
 					ExplorationMatrix[row][col] = 1;
 				}
 			}

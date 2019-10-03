@@ -240,6 +240,7 @@ void client(string ipAddress, int port, string PlayerName)
 	WSACleanup();
 }
 
+
 int main()
 {
 	
@@ -247,20 +248,25 @@ int main()
 	int port = 54000;
 	string PlayerName = "Apa";
 
+	// create thread for client and start the communication
 	std::thread client_thread(client, ipAddress, port, PlayerName);
 	client_thread.detach();
 
-	//img4map name shall be get from the server
+	// img4map name shall be get from the server
+	// init the GUI
 	GUI *Interface = new GUI(img4map, window_name);
 	while (true)
 	{
 		//cout << "gui" << std::endl;
 
 		key_lock.lock();
+
+		// getting keypresses
 		KEY_PRESSED = GUI::GetKeyPressed();
 		Invalidate(Interface);
 		key_lock.unlock();
-
+		
+		// give chance to the client thread to communicate
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		
 	}

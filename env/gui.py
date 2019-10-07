@@ -1,4 +1,6 @@
 import cv2
+import copy
+
 
 class GUI:
     def __init__(self,img4map, window_name):
@@ -13,7 +15,7 @@ class GUI:
 
     def clear_window(self):
         map = cv2.imread(self.img4map)
-        self.current_game = map
+        self.current_game = copy.deepcopy(map)
 
     def show_window(self,x,y):
         x = x - 32 if x - 32 > 0 else 0

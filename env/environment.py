@@ -23,13 +23,13 @@ def draw_all(message, player):
         params = msg_it.split(";")
 
         if len(params)== 2 and params[1] == "DEAD":
-            CHARACTERS.pop(params[0])
+            CHARACTERS.pop(int(params[0]))
 
         if len(params) != 7:
             continue
 
         try:
-            id = params[0]
+            id = int(params[0])
             x_pos = params[2]
             y_pos = params[3]
             level = params[4]
@@ -105,11 +105,31 @@ def client(ipAddress, port, player):
         time.sleep(0.01)
 
 
+def step(player, action):
+    game = 1
+    reward = 0
+
+    hp_lost = 0
+    xp_got = 0
+
+    if xp_got:
+        reward += xp_got
+    if hp_lost:
+        reward -= hp_lost
+
+    new_state = CHARACTERS[id]
+    return new_state, reward, game
+
+
 if __name__ == "__main__":
+
     client_thread = threading.Thread(target = client, args = (port, ipAddress, playerName))
     client_thread.start()
 
     gui = GUI(img4map=image, window_name=name)
+
+
+
 
     while True:
 

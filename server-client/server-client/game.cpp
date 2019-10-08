@@ -29,8 +29,15 @@ void Game::Invalidate(std::map<int,MsgHandler> &Mailbox_out)
 	int current_id;
 	for (auto it = Characters.begin(); it != Characters.end(); it++)
 	{
-		message = (*it)->Parse();
+		//if ((*it)->current_HP <= 0)
+		//{
+		//	Characters.erase(it);
+
+		//	continue;
+		//}
+
 		current_id = (*it)->id;
+		message = (*it)->Parse();		
 	
 		auto message_it = Mailbox_out.find(current_id);
 
@@ -186,7 +193,6 @@ int main()
 						//refresh Players state
 						int KeyPressed = std::stoi(msg->readMsg());
 						 int id = game->Players[msg->readName()];
-						//game->KeyEventHandler(KeyPressed, (Hero*)(game->Characters[id]));
 
 						for (auto it = game->Characters.begin(); it != game->Characters.end(); it++)
 						{

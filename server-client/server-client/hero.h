@@ -30,8 +30,8 @@ namespace RPGEnv {
 				}
 			}
 
-			for (uint row = position.y - 32; row < position.y + 32; row++) {
-				for (uint col = position.x - 32; col < position.x + 32; col++) {
+			for (int row = position.y - 32; row < position.y + 32; row++) {
+				for (int col = position.x - 32; col < position.x + 32; col++) {
 					ExplorationMatrix[row][col] = 1;
 				}
 			}
@@ -100,14 +100,21 @@ namespace RPGEnv {
 		std::string Parse()
 		{
 			std::string msg;
-			msg = std::to_string(id) + ";" + name + ";" + std::to_string(position.x) + ";"
-				+ std::to_string(position.y) + ";"
-				+ std::to_string(Level) + ";"
-				+ std::to_string(current_HP) + ";"
-				+ std::to_string(maximum_HP) + "\n";
-			return msg;
+			if (current_HP <= 0)
+			{
+				msg = std::to_string(id) + ";DEAD\n";
+				Die();
+			}
+			else
+			{
+				msg = std::to_string(id) + ";" + name + ";" + std::to_string(position.x) + ";"
+					+ std::to_string(position.y) + ";"
+					+ std::to_string(Level) + ";"
+					+ std::to_string(current_HP) + ";"
+					+ std::to_string(maximum_HP) + "\n";
+				return msg;
+			}
 		}
-
 	private:
 
 		int maximum_MP;

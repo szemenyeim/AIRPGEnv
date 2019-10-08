@@ -24,7 +24,7 @@ namespace RPGEnv {
 			NPC(level, max_HP, curr_HP) {
 			//this->Heroes.operator= *heroes;
 		}
-		void Attack();
+		//void Attack(Character &Enemy);
 		void Defense();
 
 		
@@ -50,7 +50,7 @@ namespace RPGEnv {
 				{
 					if (5 > abs(this->position.x - (*it)->position.x) && 5 > abs(this->position.y - (*it)->position.y))
 					{
-						(*it)->current_HP -= 20;
+						this->Attack(**it);
 						std::cout << "Hero HP: " << (*it)->current_HP << std::endl;
 					}
 					if (20 > abs(this->position.x - (*it)->position.x) && 20 > abs(this->position.y - (*it)->position.y)) {

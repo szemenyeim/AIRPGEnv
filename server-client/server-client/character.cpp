@@ -5,8 +5,8 @@ using namespace RPGEnv;
 
 
 
-Character::Character(int level, int max_HP, int curr_HP, int experience) :
-	Level(level), maximum_HP(max_HP), current_HP(curr_HP), experience(experience)
+Character::Character(int level, int max_HP, int curr_HP,  std::string name, int experience ) :
+	Level(level), maximum_HP(max_HP), current_HP(curr_HP), experience(experience), name(name)
 {
 	if (MAP_SIZE_X == 0 || MAP_SIZE_Y == 0)
 	{
@@ -29,8 +29,8 @@ void Character::Die()
 void Character::Move(int dx, int dy, Environment &gui)
 {
 
-	int new_x = this->position.x + dx;
-	int new_y = this->position.y + dy;
+	unsigned int new_x = this->position.x + dx;
+	unsigned int new_y = this->position.y + dy;
 
 	
 
@@ -50,7 +50,7 @@ void Character::Attack(Character &Enemy)
 
 	{
 			Enemy.current_HP -= 30;//Level * 5;
-			std::cout << "Enemy HP: " << Enemy.current_HP << std::endl;
+			std::cout<< Enemy.name <<  " HP: " << Enemy.current_HP << std::endl;
 			
 	}
 }
@@ -66,6 +66,7 @@ void Character::gainXP(int xp)
 		std::cout << "Hero XP: " << this->experience << std::endl;
 
 }
+
 
 
 void Character::setMapSize(unsigned int x, unsigned int y)

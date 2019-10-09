@@ -23,14 +23,16 @@ namespace RPGEnv {
 	{
 	public:
 		int id;
+		std::string name;
 		Position position;
 		int Level;
 		int maximum_HP;
 		int current_HP;
 		double experience = 0.0;
 		int ThreadID;
+		
 
-		Character(int level = 1, int max_HP = 100, int curr_HP = 100, int experience = 0);
+		Character(int level = 1, int max_HP = 100, int curr_HP = 100,  std::string name ="", int experience = 0 );
 		static void setMapSize(unsigned int x, unsigned int y);
 	
 		void Die();

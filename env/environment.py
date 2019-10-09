@@ -63,7 +63,7 @@ class Environment:
                 y_pos = int(params[3])
                 level = int(params[4])
                 currentHP = int(params[5])
-                maximumHP = int(params[6])
+                currentXP = float(params[6])
             except:
                 continue
             name = params[1]
@@ -73,10 +73,10 @@ class Environment:
             # if there is a new character in the game we create it
             if not is_there:
                 if name == 'Monster':
-                    self.__characters[id] = Monster(x_pos, y_pos, level, maximumHP, currentHP)
+                    self.__characters[id] = Monster(x_pos, y_pos, level, currentXP, currentHP)
 
                 else:
-                    self.__characters[id] = Hero(x_pos, y_pos, level, maximumHP, currentHP)
+                    self.__characters[id] = Hero(x_pos, y_pos, level, currentXP, currentHP)
                     if name == self.playerName:
                         self.__my_xpos = int(x_pos)
                         self.__my_ypos = int(y_pos)
@@ -87,13 +87,13 @@ class Environment:
 
                 # if the character is the player we refresh the states
                 if self.__my_id == id:
-                    self.__hp_changed = currentHP - self.__characters[self.__my_id].curr_HP
-                    # self.__xp_got = pass
+                    self.__hp_changed = currentXP - self.__characters[self.__my_id].curr_HP
+                    self.__xp_got = currentXP - self.__characters[self.__my_id].XP
                     self.__my_xpos = int(x_pos)
                     self.__my_ypos = int(y_pos)
 
                 self.__characters[id].position = (x_pos, y_pos)
-                self.__characters[id].max_HP = maximumHP
+                self.__characters[id].XP = currentXP
                 self.__characters[id].curr_HP = currentHP
 
         self.__key.release()
@@ -135,9 +135,6 @@ class Environment:
         game = 1  # game state: 1: game ongoing    0: game over    -1: conncetion lost
         reward = 0
 
-        hp_lost = 0
-        xp_got = 0
-
         # forward the taken action to the server
         self.__key.acquire()
         telegram = self.playerName + ":" + str(action)
@@ -150,14 +147,15 @@ class Environment:
 
         self.__key.release()
 
-        if xp_got:
-            reward += xp_got
-        if hp_lost:
-            reward -= hp_lost
+        if self.__xp_got:
+            reward += self.__xp_got
+        if self.__hp_changed:
+            reward -= self.__hp_changed
         try:
             new_state = self.__characters[self.__my_id]
         except:
             new_state = None
+            game = 0
 
         return new_state, reward, game
 

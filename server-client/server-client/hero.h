@@ -9,15 +9,12 @@ namespace RPGEnv {
 
 	class Hero : public Character {
 	public:
-		std::string name;
+
 		bool Attacking;
 		bool Defensing;
 		int** ExplorationMatrix;
 		Hero(std::string name = "", int level = 1, int max_HP = 100, int curr_HP = 100) :
-			Character(level, max_HP, curr_HP) 
-		{
-			this->name = name;
-		};
+			Character(level, max_HP, curr_HP, name) {};
 		void setExplorationMatrix(int rows, int cols) {
 			int sum = 0;
 			std::cout << "Rows, Cols: " << rows << "," << cols << std::endl;
@@ -111,7 +108,7 @@ namespace RPGEnv {
 					+ std::to_string(position.y) + ";"
 					+ std::to_string(Level) + ";"
 					+ std::to_string(current_HP) + ";"
-					+ std::to_string(maximum_HP) + "\n";
+					+ std::to_string(experience) + "\n";
 				return msg;
 			}
 		}

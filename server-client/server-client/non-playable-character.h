@@ -11,8 +11,8 @@ namespace RPGEnv {
 	class NPC : public Character
 	{
 	public:
-		NPC(int level = 1, int max_HP = 100, int curr_HP = 100) :
-			Character(level, max_HP, curr_HP) {}
+		NPC(int level = 1, int max_HP = 100, int curr_HP = 100, std::string name = "") :
+			Character(level, max_HP, curr_HP, name) {}
 	private:
 
 	};
@@ -20,8 +20,8 @@ namespace RPGEnv {
 	class Monster :public NPC
 	{
 	public:
-		Monster(Concurrency::concurrent_queue<Character*> heroes, int level = 1, int max_HP = 100, int curr_HP = 100) :
-			NPC(level, max_HP, curr_HP) {
+		Monster(Concurrency::concurrent_queue<Character*> heroes, int level = 1, int max_HP = 100, int curr_HP = 100, std::string name= "Monster" ) :
+			NPC(level, max_HP, curr_HP, name) {
 			//this->Heroes.operator= *heroes;
 		}
 		//void Attack(Character &Enemy);
@@ -30,11 +30,11 @@ namespace RPGEnv {
 		
 		std::string Parse() {
 			std::string msg;
-			msg = std::to_string(id) + ";" + "Monster;" + std::to_string(position.x) + ";"
+			msg = std::to_string(id) + ";" + name +";" + std::to_string(position.x) + ";"
 				+ std::to_string(position.y) + ";"
 				+ std::to_string(Level) + ";"
 				+ std::to_string(current_HP) + ";"
-				+ std::to_string(maximum_HP) + "\n ";
+				+ std::to_string(experience) + "\n ";
 			return msg;
 		}
 		Character * FindHero(Hero & PlayerOne) {
@@ -51,7 +51,6 @@ namespace RPGEnv {
 					if (5 > abs(this->position.x - (*it)->position.x) && 5 > abs(this->position.y - (*it)->position.y))
 					{
 						this->Attack(**it);
-						std::cout << "Hero HP: " << (*it)->current_HP << std::endl;
 					}
 					if (20 > abs(this->position.x - (*it)->position.x) && 20 > abs(this->position.y - (*it)->position.y)) {
 						if ((*it)->position.x > this->position.x)

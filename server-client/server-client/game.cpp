@@ -29,15 +29,24 @@ void Game::Invalidate(std::map<int,MsgHandler> &Mailbox_out)
 	int current_id;
 	for (auto it = Characters.begin(); it != Characters.end(); it++)
 	{
-		//if ((*it)->current_HP <= 0)
-		//{
-		//	Characters.erase(it);
-
-		//	continue;
-		//}
-
 		current_id = (*it)->id;
-		message = (*it)->Parse();		
+
+		if ((*it)->current_HP <= 0)
+		{
+			auto i = it;
+			i--;
+			(*it)->Die();
+			Heroes.try_pop(*it);
+			Characters.erase(it);
+			message = std::to_string(current_id) + ";DEAD\n";
+			Mailbox_out[current_id].changeMsg(message);
+			it = i;
+			continue;
+		}
+
+		message = (*it)->Parse();
+
+		
 	
 		auto message_it = Mailbox_out.find(current_id);
 

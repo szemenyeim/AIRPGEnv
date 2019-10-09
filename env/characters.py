@@ -1,11 +1,10 @@
 
 class Character:
-    def __init__(self, x, y, level, max_HP, curr_HP, experience = 0):
+    def __init__(self, x, y, level, XP, curr_HP):
         self.position = (x,y)
         self.level = level
-        self.max_HP = max_HP
+        self.XP = XP
         self.curr_HP = curr_HP
-        self.experience = experience
 
     def draw(self):
         pass

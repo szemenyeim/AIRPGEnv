@@ -23,7 +23,6 @@ namespace RPGEnv {
 		std::vector<Monster*> Villians;
 		Concurrency::concurrent_queue<Character*> Heroes;
 		Environment *Interface;
-		std::map<std::string, int> Players;
 		std::thread MonsterEngageThreads[51];
 
 		Game(const char* &img4map);

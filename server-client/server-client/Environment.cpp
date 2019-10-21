@@ -23,20 +23,6 @@ void Environment::ClearWindow()
 	current_game = game_map.clone();
 }
 
-void Environment::ShowWindow(int x, int y)
-{
-
-	//x = x - 32 > 0 ? x - 32 : 0;
-	//y = y - 32 > 0 ? y - 32 : 0;
-	//x = x + 64 < current_game.cols ? x : current_game.cols - 64;
-	//y = y + 64 < current_game.rows ? y : current_game.rows - 64;
-	//current_game = current_game(Rect(x, y, 64, 64));
-	//imshow(window_name, current_game);
-
-
-	//waitKey(1);
-}
-
 Environment::Environment(const char* &img4map) :img4map(img4map)
 {
 	ClearWindow();

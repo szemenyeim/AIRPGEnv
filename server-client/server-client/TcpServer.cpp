@@ -159,24 +159,26 @@ void TcpServer::broadcastToClients(int sendingClient)
 {
 	//TODO: Ez valami huncutságot mûvel 
 	std::string message;
-	
-	for (int i = 0; i < m_master.fd_count; i++)
+	auto msg_sent = Mailbox_out.begin();
+	for (auto msg = Mailbox_out.begin(); msg != Mailbox_out.end(); msg++)
 	{
-		SOCKET outSock = m_master.fd_array[i];
-		if (outSock != m_socket)
+		for (int i = 0; i < m_master.fd_count; i++)
 		{
-			
-			lock.lock();
-			// send the message to the client
-			for (auto msg = Mailbox_out.begin(); msg != Mailbox_out.end(); msg++)
+			SOCKET outSock = m_master.fd_array[i];
+			if (outSock != m_socket)
 			{
+			
+				
+				// send the message to the client
 				if (msg->second.in == false && msg->second.sent==false) 
 				{
 					
 					message = msg->second.readMsg();
 					const char *c = message.c_str();
 					sendToClient(outSock, c, message.length());
-					msg->second.sent = true;
+					msg_sent = msg;
+
+					//msg->second.sent = true;
 					
 				}
 				std::map<int,MsgHandler>::iterator it;
@@ -193,8 +195,8 @@ void TcpServer::broadcastToClients(int sendingClient)
 				//	break;
 				
 			}
-			lock.unlock();
 		}
+		msg_sent->second.sent = true;
 	}
 }
 
@@ -212,7 +214,8 @@ void TcpServer::onClientConnected(int clientSocket)
 	if (bytesIn > 0)
 	{
 		//Message is the name you should leave a message to create a new hero with
-		Mailbox_in.push_back(MsgHandler(buf,true));
+		//Mailbox_in.push_back(MsgHandler(buf,true));
+		onMessageReceived(clientSocket, buf, bytesIn);
 	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 

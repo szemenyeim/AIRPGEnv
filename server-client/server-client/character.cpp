@@ -62,7 +62,7 @@ void Character::gainXP(int xp)
 		this->experience += xp;
 		this->Level = static_cast<int>(this->experience / (50 + 50 * this->Level));
 
-		std::cout << "Hero LVL: " << this->Level << std::endl;
+   		std::cout << "Hero LVL: " << this->Level << std::endl;
 		std::cout << "Hero XP: " << this->experience << std::endl;
 
 }

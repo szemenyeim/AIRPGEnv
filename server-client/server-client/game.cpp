@@ -136,7 +136,14 @@ void Game::KeyEventHandler(int keypressed, Hero *PlayerOne)
 	}
 	}
 	//Invalidate();
-	PlayerOne->Exploring(keypressed);
+	try
+	{
+		PlayerOne->Exploring(keypressed);
+	}
+	catch (...)
+	{
+
+	}
 	std::cout << "XP: " << PlayerOne->experience << std::endl;
 }
 
@@ -185,27 +192,44 @@ int main()
 			{
 				if (msg->in == true) 
 				{
-					if (msg->readMsg().empty())
+					// TODO: TEST
+					if (msg->readMsg() == "JOINED")
 					{
-						// Create a new hero
 
+						// DELETE if the Joined one exists
+						for (auto it = game->Characters.begin(); it != game->Characters.end(); it++)
+						{
+							if ((*it)->name == msg->readName()) 
+							{
+								auto i = it;
+								i--;
+								(*it)->Die();
+								game->Heroes.try_pop(*it);
+								game->Characters.erase(it);
+								it = i;
+								break ;
+							}
+						}
+						// Create a new hero
 						std::string hero_name = msg->readName();
 						Hero *New_Player = new Hero(hero_name);
+
+ 						std::cout << hero_name << std::endl;
 						New_Player->setExplorationMatrix(game->Interface->SIZE_X, game->Interface->SIZE_Y);
-						game->Players.try_emplace(hero_name, New_Player->id);
+						
+					
 						game->Characters.push_back(New_Player);
 						game->Heroes.push(New_Player);
 
 					}
 					else
 					{
-						//refresh Players state
+						//refresh Heroes state
 						int KeyPressed = std::stoi(msg->readMsg());
-						 int id = game->Players[msg->readName()];
-
+						
 						for (auto it = game->Characters.begin(); it != game->Characters.end(); it++)
 						{
-							if (id == (*it)->id)
+							if (msg->readName() == (*it)->name)
 							{
 								game->KeyEventHandler(KeyPressed, (Hero*)(*it));
 							}

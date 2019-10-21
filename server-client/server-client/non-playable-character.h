@@ -22,9 +22,8 @@ namespace RPGEnv {
 	public:
 		Monster(Concurrency::concurrent_queue<Character*> heroes, int level = 1, int max_HP = 100, int curr_HP = 100, std::string name= "Monster" ) :
 			NPC(level, max_HP, curr_HP, name) {
-			//this->Heroes.operator= *heroes;
 		}
-		//void Attack(Character &Enemy);
+
 		void Defense();
 
 		

@@ -1,6 +1,5 @@
-import socket
-import threading, time
-from typing import Dict, Any
+import socket,threading
+import sys, time
 
 from gui import GUI
 from characters import Monster, Hero, Character
@@ -17,6 +16,8 @@ class Environment:
         """
 
         # operational variables for the environment
+        self.ip = ip
+        self.port =port
         self.playerName = playername
         self.__window_name = "AiRPG"
         self.__image = "map2.jpg"
@@ -25,11 +26,11 @@ class Environment:
 
         # variables to handle the player and game_state
         self.__characters ={}
-        self.__my_xpos = self.__my_ypos = self.__my_id = 0
+        self.__my_xpos = self.__my_ypos = self.__my_id = -1
         self.__hp_changed = self.__xp_got = 0
 
-        client_thread = threading.Thread(target=self.communication, args=(ip, port, playername))
-        client_thread.start()
+        self.__client_thread = threading.Thread(target=self.communication, args=(self.ip, self.port, self.playerName))
+        self.__client_thread.start()
 
         self.gui = GUI(img4map=self.__image, window_name=self.__window_name)
 
@@ -104,17 +105,30 @@ class Environment:
             self.__characters[id].draw(interface)
         interface.show_window(self.__my_xpos, self.__my_ypos)
 
-    def communication(self, ipAddress, port, player):
+    def connect2server(self, ipAddress, port, player):
         # create an ipv4 socket object
         self.__client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # connect the client
-        print(port)
-        self.__client.connect((ipAddress, int(port)))
+        try:
+            self.__client.connect((ipAddress, int(port)))
+        except:
+            return -1
+
         self.__client.setblocking(False)
 
+        # delete my gamestate representation
+        self.__characters.clear()
+
         # send the name of the player to the server
-        self.__client.send(player.encode())
+        join_msg = player + ":JOINED"
+        self.__client.send(join_msg.encode())
+
+        return 1
+
+
+    def communication(self, ipAddress, port, player):
+        self.connect2server(self.ip, self.port, self.playerName)
         received = 0
         while True:
 
@@ -132,6 +146,7 @@ class Environment:
             time.sleep(0.01)
 
     def step(self, action):
+        # TODO: game_over
         game = 1  # game state: 1: game ongoing    0: game over    -1: conncetion lost
         reward = 0
 
@@ -143,7 +158,8 @@ class Environment:
             try:
                 self.__client.send(telegram.encode())
             except:
-                print("Send failed!")
+                print("505: SERVER ERROR!\nSend failed!")
+                game = self.connect2server(self.ip, self.port, self.playerName)
 
         self.__key.release()
 
@@ -156,13 +172,23 @@ class Environment:
         except:
             new_state = None
             game = 0
+            print(game,"GAME OVER")
+            try:
+                self.__characters.pop(self.__my_id)
+            except:
+                pass
+                # game = self.connect2server(self.ip, self.port, self.playerName)
 
         return new_state, reward, game
 
 
 if __name__ == "__main__":
 
-    env = Environment('Apa', '127.0.0.1', 54000)
+    if(len(sys.argv) > 1):
+
+        env = Environment(sys.argv[1], '127.0.0.1', 54000)
+    else:
+        env = Environment('Lancelot', '127.0.0.1', 54000)
 
     while True:
         env.step(action=env.gui.get_key_pressed())

@@ -1,0 +1,6 @@
+start python environment.py 'Sir_Lancelot'
+start python environment.py 'Sir_Gawain'
+start python environment.py 'Sir_Percival'
+start python environment.py 'Sir_Geraint'
+start python environment.py 'Bors the Younger'
+start python environment.py 'Sir_Lamorak'

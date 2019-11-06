@@ -1,13 +1,30 @@
 import socket,threading
 import sys, time
+import numpy as np
+import gym
 
-from gui import GUI
-from characters import Monster, Hero, Character
+
+from Environment.gui import GUI
+from Environment.characters import Monster, Hero, Character
+
+"""GLOBAL VARIABLES"""
+IP = '127.0.0.1'
+PORT = 54000
+PLAYERNAME = 'King_Arthur'
+
+ACTION_LOOKUP = {
+    0: ord('w'),
+    1: ord('a'),
+    2: ord('s'),
+    3: ord('d'),
+    4: ord(' ')
+}
 
 
-class Environment:
+class Environment():
+    metadata = {'render.modes': ['human']}
 
-    def __init__(self, playername, ip, port):
+    def __init__(self, mode = 'human', playername = PLAYERNAME, ip = IP, port = PORT):
         """
         Initialization of the environment and
         :param playername: Name of the player character
@@ -20,21 +37,30 @@ class Environment:
         self.port =port
         self.playerName = playername
         self.__window_name = "AiRPG"
-        self.__image = "map2.jpg"
+        self.__image = r"S:\Onlab\AI_RPG_Environment\Environment\map2.jpg"
         self.__client = None
         self.__key = threading.Lock()
+        self.__mode = mode
 
         # variables to handle the player and game_state
         self.__characters ={}
         self.__my_xpos = self.__my_ypos = self.__my_id = -1
         self.__hp_changed = self.__xp_got = 0
 
-        self.__client_thread = threading.Thread(target=self.communication, args=(self.ip, self.port, self.playerName))
+        self.__client_thread = threading.Thread(target=self.__communication, args=(self.ip, self.port, self.playerName))
         self.__client_thread.start()
 
         self.gui = GUI(img4map=self.__image, window_name=self.__window_name)
 
-    def process_msg(self, message):
+        # making the whole environment gym compatible
+        if self.__mode == 'gym':
+            from gym import spaces
+            super(Environment, self).__init__()
+            self.action_space = spaces.Discrete(5)
+            # using image input
+            self.observation_space = spaces.Box(low=0, high=255, shape=(64, 64, 3), dtype=np.uint8)
+
+    def __process_msg(self, message):
         """
         :param message: message received from the server
         """
@@ -126,8 +152,7 @@ class Environment:
 
         return 1
 
-
-    def communication(self, ipAddress, port, player):
+    def __communication(self, ipAddress, port, player):
         self.connect2server(self.ip, self.port, self.playerName)
         received = 0
         while True:
@@ -140,7 +165,7 @@ class Environment:
             if received:
                 message = received.decode()
                 print(message)
-                self.process_msg(message)
+                self.__process_msg(message)
             received = None
 
             time.sleep(0.01)
@@ -149,9 +174,11 @@ class Environment:
         # TODO: game_over
         game = 1  # game state: 1: game ongoing    0: game over    -1: conncetion lost
         reward = 0
-
+        info = {}
         # forward the taken action to the server
         self.__key.acquire()
+        if self.__mode == 'gym':
+            action = ACTION_LOOKUP[action]
         telegram = self.playerName + ":" + str(action)
 
         if action > 0:
@@ -168,7 +195,8 @@ class Environment:
         if self.__hp_changed:
             reward -= self.__hp_changed
         try:
-            new_state = self.__characters[self.__my_id]
+            new_state = self.gui.current_game # self.__characters[self.__my_id]
+
         except:
             new_state = None
             game = 0
@@ -179,16 +207,20 @@ class Environment:
                 pass
                 # game = self.connect2server(self.ip, self.port, self.playerName)
 
-        return new_state, reward, game
+        return new_state, reward, game, info
 
+    def reset(self):
+        game = self.connect2server(self.ip, self.port, self.playerName)
+        new_state = self.gui.current_game[0 : 64, 0 : 64]                              # self.__characters[self.__my_id]
+        return new_state
 
 if __name__ == "__main__":
 
     if(len(sys.argv) > 1):
 
-        env = Environment(sys.argv[1], '127.0.0.1', 54000)
+        env = Environment(sys.argv[1] )
     else:
-        env = Environment('Lancelot', '127.0.0.1', 54000)
+        env = Environment()
 
     while True:
         env.step(action=env.gui.get_key_pressed())

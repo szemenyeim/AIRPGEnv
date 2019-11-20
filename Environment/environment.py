@@ -20,6 +20,7 @@ ACTION_LOOKUP = {
     4: ord(' ')
 }
 
+DEATH = False
 
 class Environment():
     metadata = {'render.modes': ['human']}
@@ -64,7 +65,7 @@ class Environment():
         """
         :param message: message received from the server
         """
-
+        global DEATH
         # aquire the mutex
         self.__key.acquire()
 
@@ -75,9 +76,11 @@ class Environment():
 
             # handle death
             if len(params) == 2 and params[1] == "DEAD":
-                self.__characters.pop(int(params[0]))
-
-            # TODO: HANDLE GAMEOVER
+                try:
+                    DEATH = True
+                    self.__characters.pop(int(params[0]))
+                except:
+                    print("already removed")
 
             # handle errors
             if len(params) != 7:
@@ -118,6 +121,7 @@ class Environment():
                     self.__xp_got = currentXP - self.__characters[self.__my_id].XP
                     self.__my_xpos = int(x_pos)
                     self.__my_ypos = int(y_pos)
+                    print("player_moved")
 
                 self.__characters[id].position = (x_pos, y_pos)
                 self.__characters[id].XP = currentXP
@@ -171,7 +175,9 @@ class Environment():
             time.sleep(0.01)
 
     def step(self, action):
-        # TODO: game_over
+
+        global DEATH
+        # TODO: game_over -> test death and handle more elegant
         game = 1  # game state: 1: game ongoing    0: game over    -1: conncetion lost
         reward = 0
         info = {}
@@ -179,6 +185,7 @@ class Environment():
         self.__key.acquire()
         if self.__mode == 'gym':
             action = ACTION_LOOKUP[action]
+            print(action)
         telegram = self.playerName + ":" + str(action)
 
         if action > 0:
@@ -195,22 +202,26 @@ class Environment():
         if self.__hp_changed:
             reward -= self.__hp_changed
         try:
-            new_state = self.gui.current_game # self.__characters[self.__my_id]
+            y = self.__characters[self.__my_id]
+            new_state = self.gui.current_game
+
 
         except:
-            new_state = None
+            new_state = self.gui.current_game[0 : 64, 0 : 64]
             game = 0
             print(game,"GAME OVER")
             try:
                 self.__characters.pop(self.__my_id)
             except:
                 pass
-                # game = self.connect2server(self.ip, self.port, self.playerName)
+            if DEATH:
+                game = self.connect2server(self.ip, self.port, self.playerName)
+                DEATH = False
 
         return new_state, reward, game, info
 
     def reset(self):
-        game = self.connect2server(self.ip, self.port, self.playerName)
+        # game = self.connect2server(self.ip, self.port, self.playerName)
         new_state = self.gui.current_game[0 : 64, 0 : 64]                              # self.__characters[self.__my_id]
         return new_state
 

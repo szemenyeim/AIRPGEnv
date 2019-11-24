@@ -92,62 +92,80 @@ double Game::CalcDist(Character & You, Character & Other)
 	return sqrt((x_dist * x_dist) + (y_dist*y_dist));
 }
 
-void Game::KeyEventHandler(int keypressed, Hero *PlayerOne)
+void Game::KeyEventHandler(int keypressed, Hero* PlayerOne)
 {
 
-	
+
 	switch (keypressed)
 	{
-	case SPACE:				//space
+	case 32:				//space
 	{
 		Character *Enemy = FindNearest(*PlayerOne);
 		if (Enemy != NULL)
 		{
-			PlayerOne->Attack(*Enemy);
-			if (0 >= Enemy->current_HP)
+			if (CalcDist(*PlayerOne, *Enemy) <= PlayerOne->getRange())
 			{
-				PlayerOne->gainXP((20 * Enemy->Level) - (PlayerOne->Level - Enemy->Level) * 5);
-				Characters.remove(Enemy);
-				Mailbox_out[Enemy->id].changeMsg(std::to_string(Enemy->id) +";DEAD\n");
-				Enemy->Die();
+				PlayerOne->Attack(*Enemy);
+				PlayerOne->gainXP(PlayerOne->getNormDmg());
+				if (0 >= Enemy->current_HP)
+				{
+					PlayerOne->gainXP((20 * Enemy->Level) - (PlayerOne->Level - Enemy->Level) * 5);
+					Characters.remove(Enemy);
+					Mailbox_out[Enemy->id].changeMsg(std::to_string(Enemy->id) + ";DEAD\n");
+					Enemy->Die();
+				}
 			}
 		}
 		break;
 	}
-	case (int)'w':
-	{	
-		PlayerOne->Move(0, -DeltaPos, *Interface);
-	break;
+
+	case 99:
+	{
+		Character* Enemy = FindNearest(*PlayerOne);
+		if (Enemy != NULL)
+		{
+			if (CalcDist(*PlayerOne, *Enemy) <= PlayerOne->getRange())
+			{
+				
+				PlayerOne->SpecialStrike(*Enemy);
+				PlayerOne->gainXP(PlayerOne->getSpecDmg());
+				if (0 >= Enemy->current_HP)
+				{
+					PlayerOne->gainXP((20 * Enemy->Level) - (PlayerOne->Level - Enemy->Level) * 5);
+					Characters.remove(Enemy);
+					Mailbox_out[Enemy->id].changeMsg(std::to_string(Enemy->id) + ";DEAD\n");
+					Enemy->Die();
+				}
+			}
+		}
+		break;
 	}
-	case (int)'a':
+	case 119:
+	{
+		PlayerOne->Move(0, -DeltaPos, *Interface);
+		break;
+	}
+	case 97:
 	{
 		PlayerOne->Move(-DeltaPos, 0, *Interface);
 		break;
 	}
-	case (int)'s':
+	case 115:
 	{
 		PlayerOne->Move(0, DeltaPos, *Interface);
 		break;
 	}
-	case (int)'d':
+	case 100:
 	{
 		PlayerOne->Move(DeltaPos, 0, *Interface);
 		break;
 	}
 	}
 	//Invalidate();
-	try
-	{
-		PlayerOne->Exploring(keypressed);
-	}
-	catch (...)
-	{
-
-	}
+	PlayerOne->Exploring(keypressed);
 	std::cout << "XP: " << PlayerOne->experience << std::endl;
 }
-
-void Game::AddNewMonster(int count = 50, int Level = 1, int HP = 100)
+void Game::AddNewMonster(int count, int Level, int HP)
 {
 	for (int i = 0; i < count; i++)
 	{
@@ -157,7 +175,6 @@ void Game::AddNewMonster(int count = 50, int Level = 1, int HP = 100)
 		MonsterEngageThreads[i] = std::thread(&Monster::Engage, boo, std::ref(Heroes));
 	}
 }
-
 
 int server(const char* ipAdrress, int port)
 {
@@ -175,16 +192,16 @@ int main()
 	const char* ipAdrress = "127.0.0.1";
 	const char* img4map = "map2.jpg";
 	int port = 54000;
-	std::queue<Hero> heroes;
+	std::queue<Hero> heroes;			// -------------------------------------------- <-
 	//Mailbox.emplace_back("x");
 	Game *game = new Game(img4map);
-	game->AddNewMonster(50);
-
+	//game->AddNewMonster(50);
 	std::thread server_thread(server, ipAdrress,port);
 	server_thread.detach();
 
 	while (true)
 	{
+		
 		lock.lock();
 		if (Mailbox_in.size() != 0)
 		{
@@ -212,28 +229,48 @@ int main()
 						}
 						// Create a new hero
 						std::string hero_name = msg->readName();
-						Hero *New_Player = new Hero(hero_name);
+						Hero* New_Player = NULL;
 
- 						std::cout << hero_name << std::endl;
-						New_Player->setExplorationMatrix(game->Interface->SIZE_X, game->Interface->SIZE_Y);
-						
-					
-						game->Characters.push_back(New_Player);
-						game->Heroes.push(New_Player);
+						if (hero_name.find("warrior") != std::string::npos)
+						{
+							Warrior *New_Player = new Warrior(hero_name);
+						}
+						else if (hero_name.find("mage") != std::string::npos)
+						{
+							Mage *New_Player = new Mage(hero_name);
+						}
+						else 
+						{
+							Warrior *New_Player = new Warrior(hero_name);
+						}
+						if (New_Player != NULL) 
+						{
+							std::cout << hero_name << std::endl;
+							New_Player->setExplorationMatrix(game->Interface->SIZE_X, game->Interface->SIZE_Y);
+
+							game->Characters.push_back(New_Player);
+							game->Heroes.push(New_Player);
+						}
+
 
 					}
 					else
 					{
 						//refresh Heroes state
-						int KeyPressed = std::stoi(msg->readMsg());
-						
-						for (auto it = game->Characters.begin(); it != game->Characters.end(); it++)
+						std::string message = msg->readMsg();
+						if (message.find("JOIN") == std::string::npos) 
 						{
-							if (msg->readName() == (*it)->name)
+							int KeyPressed = std::stoi(message);
+							for (auto it = game->Characters.begin(); it != game->Characters.end(); it++)
 							{
-								game->KeyEventHandler(KeyPressed, (Hero*)(*it));
+								if (msg->readName() == (*it)->name)
+								{
+									game->KeyEventHandler(KeyPressed, (Hero*)(*it));
+								}
 							}
 						}
+						
+						
 					}
 
 					

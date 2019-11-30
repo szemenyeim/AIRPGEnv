@@ -1,11 +1,16 @@
 #include "hero.h"
 
 using namespace RPGEnv;
+using namespace std::chrono;
 
 Hero::Hero(std::string name, int level, int max_HP, int curr_HP) :
 	Character(level, max_HP, curr_HP)
 {
 	this->name = name;
+
+	this->TimeOfStrike = time_point_cast<seconds>(system_clock::now());
+	this->TimeOfNormStrike = time_point_cast<seconds>(system_clock::now());
+	this->TimeOfSpecStrike = time_point_cast<seconds>(system_clock::now());
 };
 
 void Hero::setExplorationMatrix(int rows, int cols) {
@@ -104,30 +109,80 @@ std::string Hero::Parse()
 		+ std::to_string(position.y) + ";"
 		+ std::to_string(Level) + ";"
 		+ std::to_string(current_HP) + ";"
-		+ std::to_string(maximum_HP) + "\n";
+		+ std::to_string(experience) + "\n";
 	return msg;
 }
+
+void RPGEnv::Hero::Attack(Character& enemy)
+{
+	if ((time_point_cast<seconds>(system_clock::now()) - this->getTimeOfStrike()) > this->getCooldown()) {
+		enemy.current_HP -= 15;//Level * 5;
+		this->experience += 15;
+		std::cout << enemy.name << " HP: " << enemy.current_HP << std::endl;
+
+		this->setTimeOfStrike(time_point_cast<seconds>(system_clock::now()));
+	}
+}
+
+void RPGEnv::Hero::setCooldown(std::chrono::seconds cd)
+{
+	this->Cooldown = cd;
+}
+
+void RPGEnv::Hero::setNormCooldown(std::chrono::seconds cd)
+{
+	this->NormCooldown = cd;
+}
+
+void RPGEnv::Hero::setSpecCooldown(std::chrono::seconds cd)
+{
+	this->SpecCooldown = cd;
+}
+
+void RPGEnv::Hero::setTimeOfStrike(time_point<system_clock, seconds> time)
+{
+	this->TimeOfNormStrike = time;
+}
+
+void RPGEnv::Hero::setTimeOfNormStrike(time_point<system_clock, seconds> time)
+{
+	this->TimeOfNormStrike = time;
+}
+
+void RPGEnv::Hero::setTimeOfSpecStrike(time_point<system_clock, seconds> time)
+{
+	this->TimeOfSpecStrike = time;
+}
+
 
 // -------------------------------------------WARRIOR---------------------------------------------------------
 Warrior::Warrior(std::string name, int level, int max_HP, int curr_HP, int attackRange) :
 	Hero(name, level, max_HP, curr_HP)
 {
 	this->attackRange = attackRange;
+	this->id = 98;
+
 }
 
 void Warrior::SpecialStrike(Character& enemy) {
-
-	if (std::chrono::system_clock::now() - this->TimeOfMeleeStrike > this->meleeCooldown) {
+	auto now = time_point_cast<seconds>(system_clock::now());
+	auto timeofstrike = this->getTimeOfSpecStrike();
+	auto cd = this->getSpecCooldown();
+	if ((time_point_cast<std::chrono::seconds>(system_clock::now()) - this->getTimeOfSpecStrike()) > this->getSpecCooldown()) {
 		enemy.current_HP -= this->special_dmg;//Level * 5;
-		std::cout << "Enemy HP: " << enemy.current_HP << std::endl;
+		this->experience += this->special_dmg;
+		std::cout << enemy.name << " HP: " << enemy.current_HP << std::endl;
+		this->setTimeOfSpecStrike(time_point_cast<seconds>(system_clock::now()));
 	}
 }
 
 void Warrior::NormalStrike(Character& enemy) {
 
-	if (std::chrono::system_clock::now() - this->TimeOfMeleeStrike > this->meleeCooldown) {
+	if ((time_point_cast<std::chrono::seconds>(system_clock::now()) - this->getTimeOfNormStrike()) > this->getNormCooldown()) {
 		enemy.current_HP -= this->normal_dmg;//Level * 5;
-		std::cout << "Enemy HP: " << enemy.current_HP << std::endl;
+		this->experience += this->normal_dmg;
+		std::cout << enemy.name << " HP: " << enemy.current_HP << std::endl;
+		this->setTimeOfNormStrike(time_point_cast<seconds>(system_clock::now()));
 	}
 }
 
@@ -144,25 +199,33 @@ Mage::Mage(std::string name, int level, int max_HP, int curr_HP, int attackRange
 	Hero(name, level, max_HP, curr_HP)
 {
 	this->attackRange = attackRange;
+	this->id = 99;
+
 }
 
 void Mage::SpecialStrike(Character& enemy) {
-	if (std::chrono::system_clock::now() - this->TimeOfRangedStrike > this->rangedCooldown) {
+	auto now = std::chrono::time_point_cast<seconds>(system_clock::now());
+	auto timeofstrike = this->getTimeOfSpecStrike();
+	auto cd = this->getSpecCooldown();
+	if ((time_point_cast<std::chrono::seconds>(system_clock::now()) - this->getTimeOfSpecStrike()) > this->getSpecCooldown()) {
 		enemy.current_HP -= this->special_dmg;
-		std::cout << "Enemy HP: " << enemy.current_HP << std::endl;
+		this->experience += this->special_dmg;
+		std::cout << enemy.name << " HP: " << enemy.current_HP << std::endl;
+		this->setTimeOfSpecStrike(time_point_cast<seconds>(system_clock::now()));
 	}
 }
 
 void Mage::NormalStrike(Character& enemy) {
 
-	if (std::chrono::system_clock::now() - this->TimeOfRangedStrike > this->rangedCooldown) {
+	if ((time_point_cast<std::chrono::seconds>(system_clock::now()) - this->getTimeOfNormStrike()) > this->getNormCooldown()) {
 		enemy.current_HP -= this->normal_dmg;//Level * 5;
-		std::cout << "Enemy HP: " << enemy.current_HP << std::endl;
+		this->experience += this->normal_dmg;
+		std::cout << enemy.name << " HP: " << enemy.current_HP << std::endl;
+		this->setTimeOfNormStrike(time_point_cast<seconds>(system_clock::now()));
 	}
 }
 
 int Mage::getRange() {
 	return this->attackRange;
 }
-
 

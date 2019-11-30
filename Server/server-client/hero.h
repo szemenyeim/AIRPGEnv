@@ -3,7 +3,7 @@
 #include <queue>
 #include <string>
 
-
+using namespace std::chrono;
 
 namespace RPGEnv {
 
@@ -15,6 +15,10 @@ namespace RPGEnv {
 		int** ExplorationMatrix;
 		int matrix_rows;
 		int matrix_cols;
+		
+
+		
+
 		Hero(std::string name = "", int level = 1, int max_HP = 100, int curr_HP = 100);
 
 		void setExplorationMatrix(int rows, int cols);
@@ -22,6 +26,8 @@ namespace RPGEnv {
 		void Die();
 		void Exploring(int keypressed);
 		std::string Parse();
+
+		void Attack(Character& enemy);
 		void TakeDmg();
 		void TakeHeal();
 		virtual void NormalStrike(Character& enemy) {};
@@ -29,19 +35,45 @@ namespace RPGEnv {
 		virtual int getRange() { return this->range; };
 		void takeHeal();
 		void takeDmg();
-		virtual int getSpecDmg() {};
-		virtual int getNormDmg() {};
+		virtual int getSpecDmg() { return 1; };
+		virtual int getNormDmg() {return 1; };
+		
+		time_point<system_clock, seconds> getTimeOfStrike() { return this->TimeOfStrike; }
+		time_point<system_clock, seconds> getTimeOfNormStrike() { return this->TimeOfNormStrike; }
+		time_point<system_clock, seconds> getTimeOfSpecStrike() { return this->TimeOfSpecStrike; }
+
+		seconds getCooldown() { return this->Cooldown; }
+		seconds getNormCooldown() { return this->NormCooldown; }
+		seconds getSpecCooldown() { return this->SpecCooldown; }
+
+		void setCooldown(std::chrono::seconds cd);
+		void setNormCooldown(std::chrono::seconds cd);
+		void setSpecCooldown(std::chrono::seconds cd);
+
+		void setTimeOfStrike(time_point<system_clock, seconds> time);
+		void setTimeOfNormStrike(time_point<system_clock, seconds> time);
+		void setTimeOfSpecStrike(time_point<system_clock, seconds> time);
+
+		
+
 	private:
 		int range = 5;
 
 		int maximum_MP;
 		int current_MP;
 
+		std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> TimeOfStrike;
+		std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> TimeOfNormStrike;
+		std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> TimeOfSpecStrike;
+		seconds Cooldown = std::chrono::seconds(5);
+		seconds NormCooldown = std::chrono::seconds(10);
+		seconds SpecCooldown = std::chrono::seconds(20);
+
 	};
 
 	class Warrior : public Hero {
 	public:
-		Warrior(std::string name = "", int level = 1, int max_HP = 720, int curr_HP = 720, int attackRange = 5);
+		Warrior(std::string name = "", int level = 1, int max_HP = 720, int curr_HP = 720, int attackRange = 10);
 		void SpecialStrike(Character& enemy);
 
 		void DefensiveStance();
@@ -53,8 +85,6 @@ namespace RPGEnv {
 		int getNormDmg() { return this->normal_dmg; };
 	private:
 		int attackRange;
-		std::chrono::system_clock::time_point TimeOfMeleeStrike;
-		std::chrono::milliseconds meleeCooldown;
 
 		int normal_dmg = 60;
 		int special_dmg = 120;
@@ -75,8 +105,7 @@ namespace RPGEnv {
 		int getNormDmg() { return this->normal_dmg; };
 	private:
 		int attackRange;
-		std::chrono::system_clock::time_point TimeOfRangedStrike;
-		std::chrono::milliseconds rangedCooldown;
+
 		int normal_dmg = 85;
 		int special_dmg = 135;
 		int dmg_taken = 0;

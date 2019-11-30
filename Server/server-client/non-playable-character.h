@@ -49,7 +49,7 @@ namespace RPGEnv {
 				{
 					if (5 > abs(this->position.x - (*it)->position.x) && 5 > abs(this->position.y - (*it)->position.y))
 					{
-						this->Attack(**it);
+						//this->Attack(**it);
 					}
 					if (20 > abs(this->position.x - (*it)->position.x) && 20 > abs(this->position.y - (*it)->position.y)) {
 						if ((*it)->position.x > this->position.x)

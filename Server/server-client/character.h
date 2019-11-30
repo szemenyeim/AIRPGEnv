@@ -38,7 +38,7 @@ namespace RPGEnv {
 		void Die();
 		void gainXP(int xp);
 		void Move(int dx, int dy, Environment &gui);
-		void Attack(Character& Enemy);
+		virtual void Attack(Character& Enemy) {};
 
 		// TODO: Defense mechanic
 		void Defense();

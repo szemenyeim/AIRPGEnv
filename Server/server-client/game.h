@@ -24,11 +24,12 @@ namespace RPGEnv {
 		Concurrency::concurrent_queue<Character*> Heroes;
 		Environment *Interface;
 		std::thread MonsterEngageThreads[51];
+		int character_cnt = 0;
 
 		Game(const char* &img4map);
 		double CalcDist(Character & You, Character & Other);
 		void KeyEventHandler(int keypressed, Hero *PlayerOne);
-		void AddNewMonster(int count, int Level, int HP);	
+		void AddNewMonster(int count, int Level = 1, int HP = 100);	
 		void Invalidate(std::map<int,MsgHandler> &Mailbox);
 
 	private:

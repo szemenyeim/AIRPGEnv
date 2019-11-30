@@ -185,6 +185,7 @@ void TcpServer::broadcastToClients(int sendingClient)
 				if (msg != Mailbox_out.begin())
 				{
 					it = msg;
+					//if(msg != Mailbox_out.begin())
 					it--;
 				}
 				
@@ -243,5 +244,5 @@ void TcpServer::onMessageReceived(int clientSocket, const char* msg, int length)
 	
 	
 	/*broadcastToClients(clientSocket);*/
-	std::cout << msg << std::endl;
+	//std::cout << msg << std::endl;
 }

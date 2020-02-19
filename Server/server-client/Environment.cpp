@@ -3,7 +3,7 @@
 using namespace std;
 using namespace cv;
 
-const int hero_radius = 1;
+const int hero_radius = 3;
 const int RGB_BLUE = 250;
 
 class Circle
@@ -26,10 +26,20 @@ void Environment::ClearWindow()
 Environment::Environment(const char* &img4map) :img4map(img4map)
 {
 	ClearWindow();
+
+	/*TODO: Teszt*/
+	namedWindow("teszt", WINDOW_NORMAL);
 	SIZE_X = current_game.cols;
 	SIZE_Y = current_game.rows;
 
 }
+
+void Environment::ShowWindow()
+{
+	imshow("teszt", current_game);
+	waitKey(1);
+}
+
 
 void Environment::DrawHero(int x, int y)
 {

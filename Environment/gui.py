@@ -9,7 +9,6 @@ class GUI:
         self.window_name = window_name
 
         self.clear_window()
-        cv2.namedWindow(window_name,cv2.WINDOW_NORMAL)
         x_size = self.current_game.shape[0]
         y_size = self.current_game.shape[1]
 
@@ -23,8 +22,9 @@ class GUI:
         x = x if (x + 64 < self.current_game.shape[1])  else self.current_game.shape[1]  - 64
         y = y if (y + 64 < self.current_game.shape[0]) else self.current_game.shape[0] - 64
         self.current_game = self.current_game[y : y + 64, x : x + 64,]
-        cv2.imshow(self.window_name, self.current_game)
 
+        cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
+        cv2.imshow(self.window_name, self.current_game)
         cv2.waitKey(1)
 
     def get_key_pressed(self):

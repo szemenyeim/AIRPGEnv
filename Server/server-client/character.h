@@ -38,13 +38,14 @@ namespace RPGEnv {
 		void Die();
 		void gainXP(int xp);
 		void Move(int dx, int dy, Environment &gui);
-		virtual void Attack(Character& Enemy) {};
+		void Attack(Character& Enemy);
 
 		// TODO: Defense mechanic
 		void Defense();
 		virtual std::string Parse() = 0;
 
 		bool operator==(const Character & other);
+		virtual void Draw(Environment& gui) = 0;
 	private:
 		
 		static void freshmen() {count_of_people++;}

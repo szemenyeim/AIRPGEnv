@@ -14,7 +14,7 @@ public:
 	unsigned int y_pos_onScreen;
 
 	void ClearWindow();
-	void ShowWindow(int x, int y);
+	void ShowWindow();
 
 	Environment(const char* &img4map);
 	void DrawHero(int x, int y);

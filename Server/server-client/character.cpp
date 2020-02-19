@@ -44,17 +44,21 @@ void Character::Move(int dx, int dy, Environment &gui)
 		}
 	}
 }
-/*
+
 void Character::Attack(Character &Enemy)
 {
 
 	{
-			Enemy.current_HP -= 30;//Level * 5;
-			std::cout<< Enemy.name <<  " HP: " << Enemy.current_HP << std::endl;
-			
+		if (Enemy.current_HP > 0)
+		{
+			unsigned int hp_changed = 30;//Level * 5;
+			Enemy.current_HP -= hp_changed;
+			this->gainXP(hp_changed);
+			std::cout << Enemy.name << " HP: " << Enemy.current_HP << std::endl;
+		}
 	}
 }
-*/
+
 
 void Character::gainXP(int xp) 
 {

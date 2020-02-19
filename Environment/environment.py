@@ -20,7 +20,7 @@ ACTION_LOOKUP = {
     4: ord(' ')
 }
 
-DEATH = False
+
 
 class Environment():
     metadata = {'render.modes': ['human']}
@@ -37,6 +37,7 @@ class Environment():
         self.ip = ip
         self.port =port
         self.playerName = playername
+        self.DEATH = False
         self.__window_name = "AiRPG"
         self.__image = r"S:\Onlab\AI_RPG_Environment\Environment\map2.jpg"
         self.__client = None
@@ -65,7 +66,6 @@ class Environment():
         """
         :param message: message received from the server
         """
-        global DEATH
         # aquire the mutex
         self.__key.acquire()
 
@@ -77,7 +77,7 @@ class Environment():
             # handle death
             if len(params) == 2 and params[1] == "DEAD":
                 try:
-                    DEATH = True
+                    self.DEATH = True
                     self.__characters.pop(int(params[0]))
                 except:
                     print("already removed")
@@ -121,7 +121,7 @@ class Environment():
                     self.__xp_got = currentXP - self.__characters[self.__my_id].XP
                     self.__my_xpos = int(x_pos)
                     self.__my_ypos = int(y_pos)
-                    print("player_moved")
+                    # print("player_moved")
 
                 self.__characters[id].position = (x_pos, y_pos)
                 self.__characters[id].XP = currentXP
@@ -149,7 +149,7 @@ class Environment():
 
         # delete my gamestate representation
         self.__characters.clear()
-
+        self.DEATH = False
         # send the name of the player to the server
         join_msg = player + ":JOINED"
         self.__client.send(join_msg.encode())
@@ -168,7 +168,7 @@ class Environment():
                 pass
             if received:
                 message = received.decode()
-                print(message)
+                # print(message)
                 self.__process_msg(message)
             received = None
 
@@ -176,7 +176,6 @@ class Environment():
 
     def step(self, action):
 
-        global DEATH
         # TODO: game_over -> test death and handle more elegant
         game = 1  # game state: 1: game ongoing    0: game over    -1: conncetion lost
         reward = 0
@@ -185,7 +184,7 @@ class Environment():
         self.__key.acquire()
         if self.__mode == 'gym':
             action = ACTION_LOOKUP[action]
-            print(action)
+            # print(action)
         telegram = self.playerName + ":" + str(action)
 
         if action > 0:
@@ -214,9 +213,9 @@ class Environment():
                 self.__characters.pop(self.__my_id)
             except:
                 pass
-            if DEATH:
+            if self.DEATH:
                 game = self.connect2server(self.ip, self.port, self.playerName)
-                DEATH = False
+                self.DEATH = False
 
         return new_state, reward, game, info
 
@@ -224,6 +223,10 @@ class Environment():
         # game = self.connect2server(self.ip, self.port, self.playerName)
         new_state = self.gui.current_game[0 : 64, 0 : 64]                              # self.__characters[self.__my_id]
         return new_state
+
+    def close(self):
+        pass
+
 
 if __name__ == "__main__":
 

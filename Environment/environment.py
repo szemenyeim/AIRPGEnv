@@ -4,8 +4,8 @@ import numpy as np
 import gym
 
 
-from Environment.gui import GUI
-from Environment.characters import Monster, Hero, Character
+from gui import GUI
+from characters import Monster, Hero, Character
 
 """GLOBAL VARIABLES"""
 IP = '127.0.0.1'
@@ -39,7 +39,7 @@ class Environment():
         self.playerName = playername
         self.DEATH = False
         self.__window_name = "AiRPG"
-        self.__image = r"S:\Onlab\AI_RPG_Environment\Environment\map2.jpg"
+        self.__image = r"C:\Onlab\Maps\map2.jpg"
         self.__client = None
         self.__key = threading.Lock()
         self.__mode = mode

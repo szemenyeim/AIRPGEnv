@@ -13,6 +13,7 @@ class Character:
             y = random.randint(0, gv.map_size[1] - 1)
             if not gui.is_blue(x, y):
                 break
+
         gv.count_of_people += 1
         self.id = gv.count_of_people
         gv.out_lock.acquire()
@@ -24,6 +25,9 @@ class Character:
         self.XP = 0
         self.curr_HP = max_HP
         self.max_HP = max_HP
+        self.target = None
+        self.marked = False
+        self.hunt_list = []
 
     def calc_dist(self, other):
         x_dist = self.position[0] - other.position[0]
@@ -41,28 +45,47 @@ class Character:
 
     def gainXP(self, xp):
         self.XP += xp
-        self.level = self.XP // (50 + 50 * self.level)
+        self.level = self.XP // (50 + 50 * int(self.level))
 
-    def attack(self, enemy):
-        hp_change = 30
-        enemy.curr_HP -= hp_change
-        if enemy.curr_HP <= 0:
-            gv.characters.remove(enemy)
-            if enemy in gv.heroes:
-                gv.heroes.remove(enemy)
-            message = "{};DEAD\n".format(enemy.id)
+    def attack(self):
+        xp_change = 300
+        bonus = 500
+        self.target.curr_HP -= xp_change
+        if self.target.curr_HP <= 0:
+            try:
+                gv.characters.remove(self.target)
+            except:
+                pass  # print("removed already")
+            if self.target in gv.heroes:
+                gv.heroes.remove(self.target)
+            elif self.target in gv.villians:
+                gv.villians.remove(self.target)
+            if self.target in self.hunt_list:
+                xp_change += bonus
+                print("{} scored the bonus for quest".format(self.id))
+            message = "{};DEAD\n".format(self.target.id)
             # print(message)
-            gv.mailbox_out[enemy.id].text = message
-            gv.mailbox_out[enemy.id].sent = False
-        self.gainXP(hp_change)
+            gv.mailbox_out[self.target.id].text = message
+            gv.mailbox_out[self.target.id].sent = False
+
+        self.gainXP(xp_change)
+
+    def aim(self, target=None):
+        if self.target:
+            self.target.marked = False
+        if target:
+            self.target = target
+            self.target.marked = True
 
     def parse(self):
-        msg = "{0};{1};{2};{3};{4};{5};{6}\n" \
-            .format(self.id, self.name, self.position[0], self.position[1], self.level, self.curr_HP, self.XP)
+        msg = "{0};{1};{2};{3};{4};{5};{6};{7}\n" \
+            .format(self.id, self.name, self.position[0], self.position[1], self.level, self.curr_HP, self.XP, self.marked)
         return msg
 
 
 class Hero(Character):
+    attack_range = 5
+
     def __init__(self, gui, name, level=1, max_HP=100):
         super(Hero, self).__init__(gui, name, level, max_HP)
         # set exploration matrix
@@ -70,6 +93,9 @@ class Hero(Character):
         n = 60
         x, y = self.crop_view(n)
         self.ExplorationMatrix[y + 2: y + n + 2, x + 2: x + n + 2] = 1
+        gv.heroes.append(self)
+        gv.characters.append(self)
+
 
     def crop_view(self, n):
         x_new = self.position[0] - (n // 2) if self.position[0] - (n // 2) > 0 else 0
@@ -97,22 +123,48 @@ class Hero(Character):
 class NPC(Character):
     sight = 20
     attack_range = 5
+    targets_num = 5
 
-    def __init__(self, gui, name, level, max_HP):
-        super(NPC, self).__init__(gui, name, level, max_HP)
+    def __init__(self, gui,  level, name = "NPC", max_HP = 100):
+        super(NPC, self).__init__(gui=gui, name=name, level=level, max_HP=max_HP)
+        gv.characters.append(self)
 
+    def give_quest(self,player):
+        dog_tags = "{};Targets;".format(player.id)
+        bounty = 100
+        # todo: lets find the xp given
+        # give back some folks to hunt for a bounty todo: sophisticated selection.... maybe area based
+
+        player.hunt_list = random.sample(gv.villians, k=min(self.targets_num, len(gv.villians)))
+
+        # create messgae from the information
+        for monster in player.hunt_list:
+            dog_tags += "{};".format(monster.id)
+        dog_tags += str(bounty) + "\n\r"
+        # print(dog_tags)
+        # emplace it in the mailbox
+        gv.mailbox_out[player.id].text = dog_tags
+        gv.mailbox_out[player.id].sent = False
+
+
+    def draw(self,gui):
+        gui.draw_NPC(self.position[0], self.position[1])
 
 class Monster(NPC):
     def __init__(self, gui, level, max_HP=100, name="Monster", ):
-        super(Monster, self).__init__(gui, name, level, max_HP)
+        super(Monster, self).__init__(gui=gui, name=name, level=level, max_HP=max_HP)
+        gv.characters.append(self)
+        gv.villians.append(self)
 
     def draw(self, gui):
         gui.draw_monster(self.position[0], self.position[1])
 
     def engage(self):
+        # todo: improve with choose
         for hero in gv.heroes:
             if self.calc_dist(hero) < self.attack_range:
-                self.attack(hero)
+                self.aim(hero)
+                self.attack()
             if self.calc_dist(hero) < self.sight:
                 if self.position[0] < hero.position[0]:
                     self.position[0] += 1

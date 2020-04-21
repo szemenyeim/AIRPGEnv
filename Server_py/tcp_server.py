@@ -13,20 +13,32 @@ class Server():
         self.PORT = 54000
         self.inputs = []
 
-    # broadcast chat messages to all connected clients
-    def broadcast(self, server_socket):
+        # build the server socket
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.setblocking(0)
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server.bind((self.IP, self.PORT))
+        self.server.listen()
+
+        # add server socket object to the list of readable connections
+        self.inputs.append(self.server)
+
+    def broadcast(self):
+        """broadcast chat messages to all connected clients"""
         gv.out_lock.acquire()
         for message in gv.mailbox_out:
-            for s in self.inputs:
-                if s != server_socket and gv.mailbox_out[message].sent == False:
-                    try:
-                        s.send(gv.mailbox_out[message].text.encode())
-                        # gv.mailbox_out[message].sent = True
-                    except:
-                        pass
+            if gv.mailbox_out[message].sent == False:
+                gv.mailbox_out[message].sent = True
+                for s in self.inputs:
+                    if s != self.server:
+                        try:
+                            s.send(gv.mailbox_out[message].text.encode())
+                        except:
+                            pass
+
         gv.out_lock.release()
 
-    def msg_received(self, sock, message):
+    def msg_received(self, message):
         message = message.split("\n\r")
         for msg in message:
             if msg != "":
@@ -40,15 +52,6 @@ class Server():
         # self.broadcast(server, sock, data)
 
     def run_server(self):
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.setblocking(0)
-        # server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server.bind((self.IP, self.PORT))
-        server.listen()
-
-        # add server socket object to the list of readable connections
-        self.inputs.append(server)
-
         outputs = []
         # gv.mailbox_in = {}
 
@@ -56,14 +59,14 @@ class Server():
             readable, writable, exceptional = select.select(self.inputs, outputs, self.inputs)
             for sock in readable:
                 # a new connection request recieved
-                if sock is server:
-                    connection, client_address = server.accept()
+                if sock is self.server:
+                    connection, client_address = self.server.accept()
                     connection.setblocking(0)
                     self.inputs.append(connection)
                     # gv.server_lock.acquire()
                     # gv.mailbox_in[connection] = queue.Queue()
                     # gv.server_lock.release()
-                    connection.send("Welcome to AiRPGEnv_Server!\n\r".encode())
+                    # connection.send("Welcome to AiRPGEnv_Server!\n\r".encode())
 
 
                 # a message from a client, not a new connection
@@ -76,11 +79,11 @@ class Server():
                         data = 0
                     if data:
                         message = data.decode()
-                        # time.sleep(1)
+                        # time.sleep(0.1)
                         # print(message)
                         # receiving data from the socket.
 
-                        self.msg_received(sock, message)
+                        self.msg_received(message)
                     # else:
                     # # remove the socket that's broken
                     # if sock in outputs: outputs.remove(sock)
@@ -88,10 +91,10 @@ class Server():
                     # sock.close()
                     # del gv.mailbox_in[sock]
 
-            self.broadcast(server)
+            self.broadcast()
 
 
-        server.close()
+        self.server.close()
 
 
 if __name__ == "__main__":

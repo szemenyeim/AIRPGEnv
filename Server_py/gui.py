@@ -36,7 +36,7 @@ class GUI:
             self.current_game,
             (int(x), int(y)),
             1,
-            (0, 0, 255)
+            (95, 55, 255)
         )
 
     def draw_monster(self, x, y):
@@ -44,5 +44,22 @@ class GUI:
             self.current_game,
             (int(x), int(y)),
             1,
-            (255, 0, 0)
+            (255, 132, 10)
         )
+
+    def draw_NPC(self, x, y):
+        cv2.circle(
+            self.current_game,
+            (int(x), int(y)),
+            1,
+            (0, 0, 0)
+        )
+
+    def draw_mark(self, x, y):
+        cv2.circle(
+            self.current_game,
+            (int(x), int(y)),
+            2,
+            (10, 159, 255)
+        )
+        self.show_window()

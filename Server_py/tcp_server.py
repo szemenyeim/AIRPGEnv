@@ -1,10 +1,8 @@
 """Credits: https://steelkiwi.com/blog/working-tcp-sockets/"""
 
-import queue
 import select
 import socket
-import Server_py.global_vars as gv
-import time
+import global_vars as gv
 
 
 class Server():
@@ -17,7 +15,12 @@ class Server():
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.setblocking(0)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.bind((self.IP, self.PORT))
+
+        try:
+            self.server.bind((self.IP, self.PORT))
+        except:
+            self.server.connect((self.IP, self.PORT))
+
         self.server.listen()
 
         # add server socket object to the list of readable connections
@@ -34,44 +37,53 @@ class Server():
                         try:
                             s.send(gv.mailbox_out[message].text.encode())
                         except:
-                            pass
-
+                            continue
         gv.out_lock.release()
 
-    def msg_received(self, message):
+    def msg_received(self, message,sock):
         message = message.split("\n\r")
         for msg in message:
             if msg != "":
                 msg = msg.split(":")
-                # print(msg)
-                # gv.server_lock.acquire()
-                gv.mailbox_in.append(msg)
-            # gv.server_lock.release()
-        # print(message)
+                gv.mailbox_in [sock].append (msg)
 
-        # self.broadcast(server, sock, data)
-
+    def remove_connection(self, sock):
+        self.inputs.remove (sock)
+        sock.close ()
+        gv.server_lock.acquire ()
+        gv.mailbox_in.pop (sock)
+        gv.server_lock.release ()
+        try:
+            gv.con_lock.aquire()
+            gv.cons.pop(sock)
+            gv.con_lock.release()
+        except:
+            pass
     def run_server(self):
         outputs = []
         # gv.mailbox_in = {}
 
         while True:
-            readable, writable, exceptional = select.select(self.inputs, outputs, self.inputs)
+            readable, _, _ = select.select (self.inputs, outputs, self.inputs)
             for sock in readable:
+
                 # a new connection request recieved
                 if sock is self.server:
                     connection, client_address = self.server.accept()
                     connection.setblocking(0)
                     self.inputs.append(connection)
-                    # gv.server_lock.acquire()
-                    # gv.mailbox_in[connection] = queue.Queue()
-                    # gv.server_lock.release()
-                    # connection.send("Welcome to AiRPGEnv_Server!\n\r".encode())
-
+                    gv.server_lock.acquire ()
+                    gv.mailbox_in [connection] = []
+                    gv.server_lock.release ()
 
                 # a message from a client, not a new connection
                 else:
-
+                    try:
+                        if gv.cons[sock] == None:
+                            self.remove_connection(sock)
+                            continue
+                    except:
+                        pass
                     # process data recieved from client
                     try:
                         data = sock.recv(4096)
@@ -79,20 +91,12 @@ class Server():
                         data = 0
                     if data:
                         message = data.decode()
-                        # time.sleep(0.1)
-                        # print(message)
+
                         # receiving data from the socket.
-
-                        self.msg_received(message)
-                    # else:
-                    # # remove the socket that's broken
-                    # if sock in outputs: outputs.remove(sock)
-                    # self.inputs.remove(sock)
-                    # sock.close()
-                    # del gv.mailbox_in[sock]
-
+                        self.msg_received(message,sock)
+                    else:
+                        self.remove_connection(sock)
             self.broadcast()
-
 
         self.server.close()
 

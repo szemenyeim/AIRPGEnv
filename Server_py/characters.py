@@ -1,12 +1,12 @@
 import random, time
 import numpy as np
-import Server_py.global_vars as gv
+import global_vars as gv
 
 """todo: param loader"""
 
 
 class Character:
-    def __init__(self, gui, name, level, max_HP):
+    def __init__ (self, gui, name, level, max_HP, xp=0):
         x = y = 0
         while True:
             x = random.randint(0, gv.map_size[0] - 1)
@@ -19,10 +19,11 @@ class Character:
         gv.out_lock.acquire()
         gv.mailbox_out[self.id] = gv.mail()
         gv.out_lock.release()
+        gv.characters.append(self)
         self.name = name
         self.position = [x, y]
         self.level = level
-        self.XP = 0
+        self.XP = xp
         self.curr_HP = max_HP
         self.max_HP = max_HP
         self.target = None
@@ -46,29 +47,37 @@ class Character:
     def gainXP(self, xp):
         self.XP += xp
         self.level = self.XP // (50 + 50 * int(self.level))
+        if self.name in gv.connected:
+            gv.connected[self.name].evolve(self.XP, self.level)
 
     def attack(self):
-        xp_change = 300
+        xp_change = self.target.max_HP //2
         bonus = 500
-        self.target.curr_HP -= xp_change
+        self.target.curr_HP -= self.target.max_HP // 2
         if self.target.curr_HP <= 0:
             try:
-                gv.characters.remove(self.target)
+                 gv.characters.remove(self.target)
             except:
-                pass  # print("removed already")
+                 pass
+        #         print("removed already")
+            if self.name in gv.connected:
+                gv.connected[self.name].kill()
             if self.target in gv.heroes:
+                gv.connected [self.target.name].die()
                 gv.heroes.remove(self.target)
             elif self.target in gv.villians:
                 gv.villians.remove(self.target)
             if self.target in self.hunt_list:
                 xp_change += bonus
-                print("{} scored the bonus for quest".format(self.id))
+                gv.connected[self.name].hunt()
+                # print("{} scored the bonus for quest".format(self.id))
             message = "{};DEAD\n".format(self.target.id)
-            # print(message)
-            gv.mailbox_out[self.target.id].text = message
-            gv.mailbox_out[self.target.id].sent = False
-
+            try:
+                gv.mailbox_out[self.target.id].post_message(message)
+            except:
+                pass
         self.gainXP(xp_change)
+        self.target = None
 
     def aim(self, target=None):
         if self.target:
@@ -78,8 +87,12 @@ class Character:
             self.target.marked = True
 
     def parse(self):
-        msg = "{0};{1};{2};{3};{4};{5};{6};{7}\n" \
-            .format(self.id, self.name, self.position[0], self.position[1], self.level, self.curr_HP, self.XP, self.marked)
+        if self.target:
+            target = self.target.id
+        else:
+            target = None
+        msg = "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n" \
+            .format(self.id, self.name, self.position[0], self.position[1], self.level, self.curr_HP, self.XP, self.marked, target)
         return msg
 
 
@@ -87,15 +100,22 @@ class Hero(Character):
     attack_range = 5
 
     def __init__(self, gui, name, level=1, max_HP=100):
-        super(Hero, self).__init__(gui, name, level, max_HP)
+        xp = 0
+
+        if name in gv.connected:
+            xp = gv.connected[name].xp
+            level = gv.connected[name].level
+
+        else:
+            gv.connected [name] = gv.Stat()
+
+        super (Hero, self).__init__ (gui, name, level, max_HP,xp)
         # set exploration matrix
         self.ExplorationMatrix = np.array([[0 for x in range(gv.map_size[0])] for y in range(gv.map_size[1])])
         n = 60
         x, y = self.crop_view(n)
         self.ExplorationMatrix[y + 2: y + n + 2, x + 2: x + n + 2] = 1
         gv.heroes.append(self)
-        gv.characters.append(self)
-
 
     def crop_view(self, n):
         x_new = self.position[0] - (n // 2) if self.position[0] - (n // 2) > 0 else 0
@@ -127,7 +147,7 @@ class NPC(Character):
 
     def __init__(self, gui,  level, name = "NPC", max_HP = 100):
         super(NPC, self).__init__(gui=gui, name=name, level=level, max_HP=max_HP)
-        gv.characters.append(self)
+
 
     def give_quest(self,player):
         dog_tags = "{};Targets;".format(player.id)
@@ -143,8 +163,9 @@ class NPC(Character):
         dog_tags += str(bounty) + "\n\r"
         # print(dog_tags)
         # emplace it in the mailbox
-        gv.mailbox_out[player.id].text = dog_tags
-        gv.mailbox_out[player.id].sent = False
+
+        gv.mailbox_out[player.id].post_message(dog_tags)
+
 
 
     def draw(self,gui):
@@ -153,7 +174,6 @@ class NPC(Character):
 class Monster(NPC):
     def __init__(self, gui, level, max_HP=100, name="Monster", ):
         super(Monster, self).__init__(gui=gui, name=name, level=level, max_HP=max_HP)
-        gv.characters.append(self)
         gv.villians.append(self)
 
     def draw(self, gui):

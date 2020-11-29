@@ -10,19 +10,21 @@ class GUI:
         self.img4map = img4map
         self.orig = cv2.imread(self.img4map)
         self.clear_map()
-        # self.map =cv2.cvtColor(self.map,cv2.COLOR_BGR2HSV)
         self.window_name = window_name
-
+        self.targets = None
         self.clear_window()
         self.x_size = self.current_game.shape[1]
         self.y_size = self.current_game.shape[0]
+        self.current_game= self.current_game[0:64,0:64]
 
     def clear_window(self):
         self.current_game = copy.deepcopy(self.orig)
+        self.minimap = np.zeros((16, 16, 3))
 
     def clear_map(self):
+
         self.map = np.zeros((self.orig.shape[0] + 2, self.orig.shape[1] + 2, 3), dtype="uint8")
-        self.targets = np.zeros((16, 16))
+        self.minimap = np.zeros((16, 16, 3))
 
     def process_window(self, x, y):
         def crop_view(n):
@@ -38,10 +40,13 @@ class GUI:
                                                                        x_new: x_new + n]
         self.minimap = cv2.resize(self.map, (16, 16), interpolation=cv2.INTER_AREA)
 
-        self.minimap[np.where(self.targets == 1)] = (0, 0, 255)
+        if self.targets is not None:
+            self.minimap[np.where(self.targets == 1)] = (0, 0, 255)
+
         n = 64
         x_new, y_new = crop_view(n)
         self.current_game = self.map[y_new: y_new + n, x_new: x_new + n]
+        return self.current_game, self.minimap
 
     def show_window(self):
         cv2.namedWindow("minimap", cv2.WINDOW_NORMAL)
@@ -50,8 +55,6 @@ class GUI:
         cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
         cv2.imshow(self.window_name, self.current_game)
         cv2.waitKey(1)
-
-
 
     @staticmethod
     def get_key_pressed():

@@ -1,10 +1,10 @@
 import socket
-import sys
+import sys, os
 import threading
 import time
 
 import numpy as np
-
+sys.path.insert(0,'.')
 from Environment.characters import Monster, Hero, NPC, Quest
 from Environment.gui import GUI
 
@@ -25,7 +25,7 @@ ACTION_LOOKUP = {
 
 
 class Environment():
-    def __init__(self, mode = 'human', playername = PLAYERNAME, ip = IP, port = PORT):
+    def __init__ (self, mode='human', playername=PLAYERNAME, ip=IP, port=PORT, visu="False"):
         """
         Initialization of the environment and
         :param playername: Name of the player character
@@ -34,28 +34,31 @@ class Environment():
         """
 
         # operational variables for the environment
+        self.target = None
         self.ip = ip
-        self.port =port
+        self.port = port
         self.playerName = playername
         self.DEATH = False
         self.__window_name = "AiRPG"
-        self.__image = r"..\map_min.jpg"
+        self.__maps = [r"arctic.png", r"lake.png", r"valley.png"]
+
         self.__client = None
         self.__key = threading.Lock()
+        self.__guikey = threading.Lock()
         self.__mode = mode
+        self.__visu = visu
 
         # variables to handle the player and game_state
-        self.__characters ={}
         self.__my_xpos = self.__my_ypos = self.__my_id = -1
         self.__hp_changed = self.__xp_got = 0
         self.__quest = Quest()
-
+        self.current_map = "arctic.png"
         # setting up client thread
         self.__client_thread = threading.Thread(target=self.__communication, args=(self.ip, self.port, self.playerName))
         self.__client_thread.daemon = True
         self.__client_thread.start()
 
-        self.gui = GUI(img4map=self.__image, window_name=self.__window_name)
+        self.gui = GUI (img4map=os.path.join (".", self.current_map), window_name=self.__window_name)
 
         # making the whole environment gym compatible
         if self.__mode == 'gym':
@@ -63,11 +66,6 @@ class Environment():
             super(Environment, self).__init__()
             self.action_space = spaces.Discrete(len(ACTION_LOOKUP))
             # using image input
-            # self.observation_space = spaces.Tuple((
-            #     spaces.Box(low=0, high=255, shape=(64, 64, 3), dtype=np.uint8),
-            #     spaces.Box(low=0, high=255, shape=(16, 16, 3), dtype=np.uint8)
-            # ))
-
             self.observation_space = spaces.Box(low=0, high=255, shape=(2,), dtype=np.uint8)
 
     def __process_msg(self, message):
@@ -75,19 +73,24 @@ class Environment():
         """
         :param message: message received from the server
         """
-        # aquire the mutex
-
-        # print(message)
         # split the messages for the information
         characters_from_msg = message.split("\n")
         for msg_it in characters_from_msg:
+
             params = msg_it.split(";")
             # handle quest
-            try:
-                id = int(params[0])
-            except:
+            if params [0] in self.__maps:
+                self.current_map = params [0]
+                # print(self.current_map)
+                self.gui = GUI (img4map=os.path.join (".", self.current_map), window_name=self.__window_name)
+            else:
+                try:
+                    id = int(params[0])
+                except ValueError:
+                    # print (params[0])
+                    continue
 
-                pass
+
             if len(params) >= 2:
                 if id == self.__my_id and params[1] == "Targets":
                     self.__quest.targets.clear()
@@ -96,7 +99,10 @@ class Environment():
                     for i in params[2:]:
                         if i == params[-1]:
                             # store the bounty
-                            self.__quest.xp = int(i)
+                            try:
+                                self.__quest.xp = int(i)
+                            except: 
+                                continue
                         else:
                             # store targets
                             self.__quest.targets.append(int(i))
@@ -116,10 +122,11 @@ class Environment():
                     except:
                         # fella already removed
                         pass
-                        # print("already removed")
+
+
 
             # handle errors
-            if len(params) != 8:
+            if len(params) != 9:
                 continue
 
             # parse the parameters of the character
@@ -131,6 +138,7 @@ class Environment():
                 currentHP = int(params[5])
                 currentXP = float(params[6])
                 marked = (params[7] == "True")
+                self.target = params[8]
             except:
                 continue
             name = params[1]
@@ -139,28 +147,27 @@ class Environment():
 
             # if there is a new character in the game we create it
             if not is_there:
-                self.__key.acquire()
+
                 if name == 'Monster':
                     self.__characters[id] = Monster(x_pos, y_pos, level, currentXP, currentHP,marked)
                 elif name == 'NPC':
                     self.__characters[id] = NPC(x_pos, y_pos, level, currentXP, currentHP, marked)
                 else:
+                    # print(msg_it)
                     self.__characters[id] = Hero(x_pos, y_pos, level, currentXP, currentHP, marked)
-                    if name == self.playerName:
+                    if self.playerName == name:
                         self.__my_xpos = int(x_pos)
                         self.__my_ypos = int(y_pos)
                         self.__my_id = id
-                self.__key.release()
+
             # if we knew that this character exist
             elif is_there:
-
                 # if the character is the player we refresh the states
-                if self.__my_id == id:
-                    self.__hp_changed = currentHP - self.__characters[self.__my_id].curr_HP
-                    self.__xp_got = currentXP - self.__characters[self.__my_id].XP
+                if self.playerName == name:
+                    self.__hp_changed = currentHP - self.__characters[id].curr_HP
+                    self.__xp_got = currentXP - self.__characters[id].XP
                     self.__my_xpos = int(x_pos)
                     self.__my_ypos = int(y_pos)
-                    # print("player_moved")
 
                 # todo: unmark fellas
                 self.__characters[id].position = (x_pos, y_pos)
@@ -173,27 +180,33 @@ class Environment():
     def render(self):
         self.gui.clear_window()
         # todo: lock required
-        # self.__key.acquire()
-        for id in self.__characters:
-            self.__characters[id].draw(self.gui)
-            if self.__characters[id].marked:
-                self.gui.draw_mark(self.__characters[id].position[0], self.__characters[id].position[1])
-            if id in self.__quest.targets:
-                self.gui.draw_targets(self.__characters[id].position[0], self.__characters[id].position[1])
-        # self.__key.release()
+        self.__key.acquire()
+        try:
+            for id in self.__characters:
+                self.__characters[id].draw(self.gui)
+                if self.__characters[id].marked:
+                    self.gui.draw_mark(self.__characters[id].position[0], self.__characters[id].position[1])
+                if id in self.__quest.targets and self.gui.targets is not None:
+                    self.gui.draw_targets(self.__characters[id].position[0], self.__characters[id].position[1])
+        except:
+            "uupsz"
+        self.__key.release()
 
         self.gui.process_window(self.__my_xpos, self.__my_ypos)
-        if self.__mode == 'human':
-            self.gui.show_window()
+        if self.__visu == True:
+            self.gui.show_window ()
         return self.gui.current_game, self.gui.minimap
 
     def connect2server(self, ipAddress, port, player):
         # create an ipv4 socket object
+        self.__characters = {}
         self.__client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # connect the client
         try:
             self.__client.connect((ipAddress, int(port)))
+            join_msg = player + ":JOINED\n\r"
+            self.__client.send (join_msg.encode ())
         except:
             return -1
 
@@ -202,10 +215,6 @@ class Environment():
         # delete my gamestate representation
         self.__characters.clear()
         self.DEATH = False
-        # send the name of the player to the server
-        join_msg = player + ":JOINED\n\r"
-        self.__client.send(join_msg.encode())
-        # print(join_msg)
 
         return 1
 
@@ -221,14 +230,15 @@ class Environment():
                 pass
             if received:
                 message = received.decode()
-                # print(message)
+                self.__key.acquire()
                 self.__process_msg(message)
+                self.__key.release()
             received = None
-
-            time.sleep(0.01)
+            #thread.yield()
+            time.sleep(0)
 
     def step(self, action):
-
+        # print(len(self.__characters))
         game = 1  # game state: 1: game ongoing    0: game over    -1: conncetion lost
         reward = 0
         info = {}
@@ -242,38 +252,29 @@ class Environment():
             try:
                 self.__client.send(telegram.encode())
             except:
-                print("505: SERVER ERROR!\nSend failed!")
+                # print("505: SERVER ERROR!\nSend failed!")
                 game = self.connect2server(self.ip, self.port, self.playerName)
-
         self.__key.release()
 
-        if self.__xp_got:
-            reward += self.__xp_got
+
+        if self.__xp_got > 0:
+            reward = 1
+            if self.__xp_got > 70:
+                reward += 1
+            if self.__xp_got > 200:
+                reward += 1
             self.__xp_got = 0
-        if self.__hp_changed:
-            reward += self.__hp_changed
-
-            self.__hp_changed = 0
-
-        #
 
         try:
-            y = self.__characters[self.__my_id]
+            
+            new_state, map = self.render()
+        except:
             new_state, map = self.render()
 
-        except:
-            new_state = self.gui.current_game[0:64, 0:64]
-            map = np.zeros((16, 16, 3))
-            game = 0
-            # print(game,"GAME OVER")
-            try:
-                self.__characters.pop(self.__my_id)
-            except:
-                pass
-            if self.DEATH:
-                game = self.connect2server(self.ip, self.port, self.playerName)
-                self.DEATH = False
-
+        if self.DEATH:
+            game = self.connect2server(self.ip, self.port, self.playerName)
+            self.DEATH = False
+            reward = -1
         return new_state, map, reward, game, info
 
     def reset(self):
@@ -292,9 +293,9 @@ if __name__ == "__main__":
 
     if(len(sys.argv) > 1):
 
-        env = Environment(playername=sys.argv[1])
+        env = Environment (playername=sys.argv [1], visu=True)
     else:
-        env = Environment()
+        env = Environment (visu=True)
 
     while True:
         env.step(action=env.gui.get_key_pressed())
@@ -302,4 +303,5 @@ if __name__ == "__main__":
             env.render()
         except:
             "upps"
-        time.sleep(0.01)
+        #threading.yield()
+        time.sleep(0)

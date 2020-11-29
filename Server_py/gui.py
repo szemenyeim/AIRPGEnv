@@ -1,7 +1,7 @@
 import copy
 import cv2
 
-import Server_py.global_vars as gv
+import global_vars as gv
 
 
 class GUI:

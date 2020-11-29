@@ -1,38 +1,57 @@
-import Server_py.gui as gui
-from Server_py.tcp_server import Server
-from Server_py.characters import Monster, Hero, NPC
+import gui as gui
+from tcp_server import Server
+from characters import Monster, Hero, NPC, Character
 import threading, time
-import Server_py.global_vars as gv
-
+import global_vars as gv
+import os,csv, numpy, random, sys
+sys.path.insert(0,'.')
 
 class Game():
     delta_pos = 1
 
-    def __init__(self):
+    def __init__(self,level):
         # todo: write param parser
-        self.__window_name = "AiRPG"
-        self.__image = r"..\map_min.jpg"
-        self.interface = gui.GUI(self.__image, self.__window_name)
+        self.__window_name = "AiRPG Server View"
+        self.__maps = [r"arctic.png", r"lake.png", r"valley.png"]
+        self.current_map = -1
+        self.level = level
 
         gv.server_lock = threading.Lock()
         gv.out_lock = threading.Lock()
+        gv.con_lock = threading.Lock()
 
         self.server_thread = threading.Thread(target=self.start_server)
         self.server_thread.daemon = True
         self.server_thread.start()
 
+        self.step = False
         self.monsters_move = threading.Thread(target=self.monster_handler)
         self.monsters_move.daemon = True
         self.monsters_move.start()
+
+
+        current_time = time.ctime ().replace (":", "_")
+        log_dir = "logs/game/{}".format (current_time)
+        os.makedirs(log_dir)
+        self.log = "{}/train_log.csv".format (log_dir)
+        with open (self.log, 'w+', newline='') as f:
+            csv_writer = csv.writer (f, delimiter=";")
+            csv_writer.writerow (['time', 'map', 'game_level',
+                                   'hero', 'hero_ level',
+                                  'hero_xp', 'death_count',
+                                  'killing_count', 'hunting_count'
+                                  ])
+
+        self.change_map ()
+        self.server.broadcast()
+
 
     @staticmethod
     def invalidate():
         """post the state of the game into the mailbox"""
         for fella in gv.characters:
             message = fella.parse()
-            if gv.mailbox_out[fella.id].text != message:
-                gv.mailbox_out[fella.id].text = message
-                gv.mailbox_out[fella.id].sent = False
+            gv.mailbox_out[fella.id].post_message(message)
 
     def draw(self):
         for fella in gv.characters:
@@ -54,75 +73,68 @@ class Game():
 
 
     def key_handler(self, key_pressed, player):
-        if key_pressed is 'f' or key_pressed is' ':
+        if key_pressed == 'f' or key_pressed ==' ':
             self.choose(player)
-            if player.target:
+            if player.target in gv.characters:
                 if player.target.name == "NPC":
                     player.target.give_quest(player)
                     self.server.broadcast()
-                elif key_pressed is ' ':
-                    player.attack()            # print("oop")
-        elif key_pressed is 'w':
+                elif key_pressed == ' ':
+                    player.attack()
+
+
+        elif key_pressed == 'w':
             player.move(0, -self.delta_pos, self.interface)
-        elif key_pressed is 's':
+        elif key_pressed == 's':
             player.move(0, self.delta_pos, self.interface)
-        elif key_pressed is 'd':
+        elif key_pressed == 'd':
             player.move(self.delta_pos, 0, self.interface)
-        elif key_pressed is 'a':
+        elif key_pressed == 'a':
             player.move(-self.delta_pos, 0, self.interface)
 
         player.explore(key_pressed)
 
-    def add_monster(self, gui, count=50, level=1, hp=100):
-        for i in range(count):
-            monster = Monster(gui=self.interface, level=1)
+    def add_monster(self, count=50):
+        for _ in range(count):
+            Monster(gui=self.interface, level=self.level, max_HP=self.level * 100)
 
-
-    @staticmethod
-    def monster_handler():
+    def monster_handler(self):
         while True:
-            # gv.server_lock.acquire()
-            for monster in gv.villians:
-                monster.engage()
-            time.sleep(1)
-            # gv.server_lock.release()
+            if self.step:
+                for monster in gv.villians:
+                    monster.engage()
+                self.step = False
+                time.sleep(1)
 
 
-    def start_server(self):
-        self.server = Server()
-        self.server.run_server()
+
+    def start_server (self):
+        self.server = Server ()
+        self.server.run_server ()
         return 0
 
     def put_NPC(self, num=1):
         for _ in range(num):
             NPC(self.interface,level=1)
 
-
-def main():
-    game = Game()
-    game.add_monster(game.interface, 50)
-    game.put_NPC(10)
-
-    while True:
-        if len(gv.mailbox_in) != 0:
-            message = gv.mailbox_in.pop()
-            # print(message)
-            # Create a new Hero
+    def process_message (self, message,sock):
             if "JOINED" in message:
-                # character gets deleted i its exist
+            # character gets deleted i its exist
                 for fella in gv.heroes:
                     if fella.name == message[0]:
                         gv.characters.remove(fella)
                         gv.heroes.remove(fella)
+                        gv.out_lock.acquire()
+                        gv.mailbox_out.pop(fella.id)
+                        gv.out_lock.release()
                         break
 
                 # Create new hero
-                hero = Hero(game.interface, message[0])
-                # print(hero.name)
+                hero = Hero (self.interface, message [0])
                 # Reset the messages
                 for slot in gv.mailbox_out:
                     gv.mailbox_out[slot].sent = False
-                    # print(gv.mailbox_out[slot].text)
+                gv.cons[sock] = hero
 
             # refresh the state of the hero
             elif len(message) == 2:
@@ -130,13 +142,71 @@ def main():
                 for fella in gv.heroes:
                     if fella.name == message[0]:
                         # print(key)
-                        game.key_handler(chr(key), fella)
+                        self.key_handler(chr(key), fella)
+
+    def change_map(self):
+            self.level += 1
+            self.current_map = (self.current_map + 1) % len (self.__maps)
+            self.interface = gui.GUI (os.path.join (".", self.__maps [self.current_map]), self.__window_name)
+
+            with open(self.log, 'a+', newline='') as f:
+                csv_writer = csv.writer(f, delimiter=";")
+                csv_writer.writerow([time.ctime(), self.level, self.__maps[self.current_map]])
+                for hero_name in gv.connected:
+                    csv_writer.writerow(['', '', '',
+                                         hero_name, gv.connected[hero_name].level,
+                                         gv.connected[hero_name].xp, gv.connected[hero_name].death,
+                                         gv.connected[hero_name].killing, gv.connected[hero_name].hunting])
+
+            gv.characters.clear()
+            gv.out_lock.acquire()
+            gv.mailbox_out.clear()
+            gv.out_lock.release()
+            gv.heroes.clear()
+            gv.villians.clear()
+
+            self.add_monster (50)
+            self.put_NPC (10)
+            gv.out_lock.acquire()
+            gv.mailbox_out ['map'] = gv.mail ()
+            gv.out_lock.release()
+            gv.mailbox_out['map'].post_message(self.__maps[self.current_map]+";\n")
+
+
+def main():
+    level = 1
+    game = Game(level)
+
+    while True:
+        # print(len(gv.characters), len(gv.villians), len(gv.heroes), gv.count_of_people)
+        if len (gv.mailbox_in) != 0:
+            gv.server_lock.acquire ()
+            for con in gv.mailbox_in:
+                if len (gv.mailbox_in [con]) != 0:
+                    message = gv.mailbox_in [con].pop ()
+                    game.process_message (message,con)
+            game.step = True
+            gv.server_lock.release ()
+
+        gv.con_lock.acquire()
+        for c in gv.cons:
+            if gv.cons[c] not in gv.heroes:
+                gv.cons[c] = None
+        gv.con_lock.release()
+
+        if len (gv.villians) == 0:
+            # change map if no enemy left
+            game.change_map()
 
         # Refresh GUI and messages
         game.invalidate()
         game.draw()
 
-        # time.sleep(.1)
+        # time.sleep(.01)
 
 if __name__ == "__main__":
+    seed_value = 42
+    os.environ ['PYTHONHASHSEED'] = str (seed_value)
+    random.seed (seed_value)
+    numpy.random.seed (seed_value)
     main()
